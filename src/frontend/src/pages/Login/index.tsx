@@ -1,7 +1,22 @@
 import React from 'react';
+import { request, useRequest } from 'umi';
+import { Button } from 'antd';
 
 const LoginPage: React.FC = () => {
-    return <div>登录页面</div>
+
+    const { data, run: login } = useRequest(() => {
+        return request('/api/login', {method: 'POST', data: {
+            "loginName": "FUCK",
+            "password": "YOU",
+        }})
+    }, {manual: true})
+
+    return (
+        <div>
+            <Button onClick={login}>登录</Button>
+            <div>{data?.message}</div>
+        </div>
+    )
 }
 
 export default LoginPage;
