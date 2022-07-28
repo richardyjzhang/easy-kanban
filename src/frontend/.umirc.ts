@@ -5,7 +5,6 @@ export default defineConfig({
   access: {},
   model: {},
   initialState: {},
-  request: {},
   layout: {
     title: '@umijs/max',
   },
@@ -30,6 +29,16 @@ export default defineConfig({
   npmClient: 'npm',
   history: {
     type: 'hash',
-  }
+  },
+  proxy: {
+    '/api': {
+      'target': 'http://127.0.0.1:9000/',
+      'changeOrigin': true,
+      'pathRewrite': { '^/api' : '' },
+    }
+  },
+  request: {
+    dataField: '',
+  },
 });
 
