@@ -6,7 +6,7 @@ import styles from './index.css';
 import { postLoginRequest } from './service';
 
 const LoginPage: React.FC = () => {
-  const { run: login } = useRequest<API.Login.LoginResult>(postLoginRequest, {
+  const { run: login } = useRequest(postLoginRequest, {
     manual: true,
     onSuccess: (data) => {
       const result = data as API.Login.LoginResult;
