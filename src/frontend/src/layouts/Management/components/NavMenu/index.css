@@ -1,0 +1,13 @@
+.root {
+    margin-left: 48px;
+    margin-right: 48px;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.menuItem {
+    margin-left: 24px;
+    margin-right: 24px;
+}
