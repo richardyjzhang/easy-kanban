@@ -1,32 +1,53 @@
-import { Button } from 'antd';
-import React, { useState } from 'react';
+import { Button, Form, Input, message } from 'antd';
+import { SHA256 } from 'crypto-js';
+import React from 'react';
 import { useRequest } from 'umi';
 import { postLoginRequest } from './service';
 
 const LoginPage: React.FC = () => {
-  const user: API.Login.LoginUser = {
-    loginName: 'FUCK',
-    password: 'YOU',
-  };
-
-  const [message, setMessage] = useState('');
   const { run: login } = useRequest<API.Login.LoginResult>(postLoginRequest, {
     manual: true,
     onSuccess: (data) => {
-      setMessage((data as API.Login.LoginResult).message);
+      const result = data as API.Login.LoginResult;
+      if (result.success) {
+        message.success(result.message);
+      } else {
+        message.error(result.message);
+      }
     },
   });
 
+  // 密码加密
+  const onFormFinished = (values: API.Login.LoginUser) => {
+    login({
+      ...values,
+      password: SHA256(`easy-kanban${values.password}`).toString(),
+    });
+  };
+
   return (
     <div>
-      <Button
-        onClick={() => {
-          login(user);
-        }}
-      >
-        登录
-      </Button>
-      <div>{message}</div>
+      <Form onFinish={onFormFinished}>
+        <Form.Item
+          label="用户名"
+          name="loginName"
+          rules={[{ required: true, message: '' }]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          label="密码"
+          name="password"
+          rules={[{ required: true, message: '' }]}
+        >
+          <Input.Password />
+        </Form.Item>
+        <Form.Item>
+          <Button type="primary" htmlType="submit">
+            登录
+          </Button>
+        </Form.Item>
+      </Form>
     </div>
   );
 };
