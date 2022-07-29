@@ -25,6 +25,11 @@ export default defineConfig({
       path: '/home',
       component: './Home',
     },
+    {
+      name: '组织管理',
+      path: '/organization',
+      component: './Organization',
+    },
   ],
   npmClient: 'npm',
   history: {
@@ -32,13 +37,12 @@ export default defineConfig({
   },
   proxy: {
     '/api': {
-      'target': 'http://127.0.0.1:9000/',
-      'changeOrigin': true,
-      'pathRewrite': { '^/api' : '' },
-    }
+      target: 'http://127.0.0.1:9000/',
+      changeOrigin: true,
+      pathRewrite: { '^/api': '' },
+    },
   },
   request: {
     dataField: '',
   },
 });
-
