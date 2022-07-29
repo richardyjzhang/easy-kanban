@@ -1,11 +1,14 @@
 import React from 'react';
 import { Outlet } from 'umi';
+import styles from './index.css';
 
 const ManagementLayout: React.FC = () => {
   return (
     <div>
-      <div>FUCK</div>
-      <Outlet />
+      <header className={styles.nav}></header>
+      <main className={styles.wrapper}>
+        <Outlet />
+      </main>
     </div>
   );
 };

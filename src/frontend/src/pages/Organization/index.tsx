@@ -38,7 +38,12 @@ const OrganizationPage: React.FC = () => {
 
   return (
     <div>
-      <Table columns={columns} dataSource={organizations} rowKey="id" />
+      <Table
+        columns={columns}
+        dataSource={organizations}
+        bordered
+        rowKey="id"
+      />
     </div>
   );
 };
