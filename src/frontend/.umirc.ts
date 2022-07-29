@@ -6,7 +6,7 @@ export default defineConfig({
   model: {},
   initialState: {},
   layout: {
-    title: '@umijs/max',
+    title: 'easy-kanban',
   },
   routes: [
     {
@@ -21,14 +21,21 @@ export default defineConfig({
       layout: false,
     },
     {
+      path: '/',
+      component: '@/layouts/Management',
+      layout: false,
+      routes: [
+        {
+          name: '组织管理',
+          path: '/organization',
+          component: './Organization',
+        },
+      ],
+    },
+    {
       name: '首页',
       path: '/home',
       component: './Home',
-    },
-    {
-      name: '组织管理',
-      path: '/organization',
-      component: './Organization',
     },
   ],
   npmClient: 'npm',
