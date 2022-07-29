@@ -1,25 +1,32 @@
 import { Button } from 'antd';
-import React from 'react';
-import { request, useRequest } from 'umi';
+import React, { useState } from 'react';
+import { useRequest } from 'umi';
+import { postLoginRequest } from './service';
 
 const LoginPage: React.FC = () => {
-  const { data, run: login } = useRequest(
-    () => {
-      return request('/api/login', {
-        method: 'POST',
-        data: {
-          loginName: 'FUCK',
-          password: 'YOU',
-        },
-      });
+  const user: API.Login.LoginUser = {
+    loginName: 'FUCK',
+    password: 'YOU',
+  };
+
+  const [message, setMessage] = useState('');
+  const { run: login } = useRequest<API.Login.LoginResult>(postLoginRequest, {
+    manual: true,
+    onSuccess: (data) => {
+      setMessage((data as API.Login.LoginResult).message);
     },
-    { manual: true },
-  );
+  });
 
   return (
     <div>
-      <Button onClick={login}>登录</Button>
-      <div>{data?.message}</div>
+      <Button
+        onClick={() => {
+          login(user);
+        }}
+      >
+        登录
+      </Button>
+      <div>{message}</div>
     </div>
   );
 };
