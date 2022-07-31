@@ -18,7 +18,7 @@ const NavMenu: React.FC = () => {
         项目管理
       </Menu.Item>
       <Menu.Item className={styles.menuItem} key="worker">
-        用户管理
+        人资管理
       </Menu.Item>
     </Menu>
   );
