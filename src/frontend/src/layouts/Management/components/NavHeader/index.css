@@ -1,0 +1,16 @@
+.root {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.icon {
+    font-size: 48px;
+    margin: 0 24px;
+}
+
+.title {
+    margin-left: 48px;
+    font-size: 22px;
+    cursor: default;
+}
