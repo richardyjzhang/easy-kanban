@@ -1,0 +1,14 @@
+.addRow {
+    display: flex;
+    margin-bottom: 24px;
+    justify-content: end;
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: end;
+}
+
+.modalOk {
+    margin-left: 24px;
+}

@@ -5,5 +5,10 @@ declare namespace API {
       name: string;
       remark: string | undefined;
     };
+
+    type AddOrganization = {
+      name: string;
+      remark: string | undefined;
+    };
   }
 }
