@@ -7,6 +7,7 @@ import {
   Input,
   message,
   Modal,
+  Popconfirm,
   Table,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -100,17 +101,20 @@ const OrganizationPage: React.FC = () => {
               setEditModel(true);
               setShowModal(true);
             }}
+            className={styles.editButton}
           >
             编辑
           </Button>
-          <Button
-            type="link"
-            onClick={() => {
+          <Popconfirm
+            title="确认删除该组织吗?"
+            onConfirm={() => {
               deleteOrganization(org.id);
             }}
+            okText="确认"
+            cancelText="取消"
           >
-            删除
-          </Button>
+            <Button type="link">删除</Button>
+          </Popconfirm>
         </div>
       ),
     },
