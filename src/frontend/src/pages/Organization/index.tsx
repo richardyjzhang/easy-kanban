@@ -14,9 +14,10 @@ import React, { useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.css';
 import {
-  addOneOrganization,
-  deleteOneOrganization,
-  fetchAllOrganizations,
+  _addOneOrganization,
+  _deleteOneOrganization,
+  _fetchAllOrganizations,
+  _updateOneOrganition,
 } from './service';
 
 const OrganizationPage: React.FC = () => {
@@ -24,16 +25,28 @@ const OrganizationPage: React.FC = () => {
     API.Organization.Organization[]
   >([]);
 
+  // 是否展示新增/编辑弹窗
   const [showModal, setShowModal] = useState(false);
 
-  useRequest(fetchAllOrganizations, {
+  // 是否为编辑弹窗,否为新增弹窗
+  const [editModel, setEditModel] = useState(false);
+
+  // 当前编辑组织
+  const [curOrganization, setCurOrganization] =
+    useState<API.Organization.Organization>({
+      id: 0,
+      name: '',
+      remark: '',
+    });
+
+  useRequest(_fetchAllOrganizations, {
     onSuccess: (data) => {
       const orgs = data as API.Organization.Organization[];
       setOrganizations(orgs);
     },
   });
 
-  const { run: addOrganization } = useRequest(addOneOrganization, {
+  const { run: addOrganization } = useRequest(_addOneOrganization, {
     manual: true,
     onSuccess: (data) => {
       const org = data as API.Organization.Organization;
@@ -43,7 +56,7 @@ const OrganizationPage: React.FC = () => {
   });
 
   const { run: deleteOrganization, params: _params } = useRequest(
-    deleteOneOrganization,
+    _deleteOneOrganization,
     {
       manual: true,
       onSuccess: () => {
@@ -52,6 +65,15 @@ const OrganizationPage: React.FC = () => {
       },
     },
   );
+
+  const { run: updateOrganization } = useRequest(_updateOneOrganition, {
+    manual: true,
+    onSuccess: (data) => {
+      const org = data as API.Organization.Organization;
+      const others = organizations.filter((v) => v.id !== org.id);
+      setOrganizations([...others, org]);
+    },
+  });
 
   // 表格列定义
   const columns: ColumnsType<API.Organization.Organization> = [
@@ -74,6 +96,16 @@ const OrganizationPage: React.FC = () => {
           <Button
             type="link"
             onClick={() => {
+              setCurOrganization(org);
+              setEditModel(true);
+              setShowModal(true);
+            }}
+          >
+            编辑
+          </Button>
+          <Button
+            type="link"
+            onClick={() => {
               deleteOrganization(org.id);
             }}
           >
@@ -90,9 +122,59 @@ const OrganizationPage: React.FC = () => {
       return;
     }
 
-    addOrganization(values);
+    if (editModel) {
+      const org = { ...values, id: curOrganization.id };
+      updateOrganization(org);
+    } else {
+      addOrganization(values);
+    }
     setShowModal(false);
   };
+
+  // 编辑/新增弹窗
+  const model = (
+    <Modal
+      visible={showModal}
+      footer={null}
+      maskClosable={false}
+      closable={false}
+      onCancel={() => {
+        setShowModal(false);
+      }}
+      destroyOnClose
+      width={600}
+      title={editModel ? '编辑组织' : '新增组织'}
+    >
+      <Form
+        onFinish={onFormFinished}
+        labelCol={{ span: 4 }}
+        wrapperCol={{ span: 20 }}
+        initialValues={editModel ? curOrganization : {}}
+      >
+        <Form.Item name="name" label="组织名称">
+          <Input placeholder="组织名称" />
+        </Form.Item>
+        <Form.Item name="remark" label="备注">
+          <Input placeholder="备注" />
+        </Form.Item>
+        <Divider />
+        <div className={styles.modalFooter}>
+          <Button
+            type="default"
+            className={styles.modalCancel}
+            onClick={() => {
+              setShowModal(false);
+            }}
+          >
+            取消
+          </Button>
+          <Button type="primary" htmlType="submit" className={styles.modalOk}>
+            确认
+          </Button>
+        </div>
+      </Form>
+    </Modal>
+  );
 
   return (
     <div>
@@ -102,6 +184,7 @@ const OrganizationPage: React.FC = () => {
             icon={<PlusOutlined />}
             type="primary"
             onClick={() => {
+              setEditModel(false);
               setShowModal(true);
             }}
           >
@@ -115,45 +198,7 @@ const OrganizationPage: React.FC = () => {
           rowKey="id"
         />
       </Card>
-      <Modal
-        visible={showModal}
-        footer={null}
-        maskClosable={false}
-        closable={false}
-        onCancel={() => {
-          setShowModal(false);
-        }}
-        width={600}
-        title="添加组织"
-      >
-        <Form
-          onFinish={onFormFinished}
-          labelCol={{ span: 4 }}
-          wrapperCol={{ span: 20 }}
-        >
-          <Form.Item name="name" label="组织名称">
-            <Input placeholder="组织名称" />
-          </Form.Item>
-          <Form.Item name="remark" label="备注">
-            <Input placeholder="备注" />
-          </Form.Item>
-          <Divider />
-          <div className={styles.modalFooter}>
-            <Button
-              type="default"
-              className={styles.modalCancel}
-              onClick={() => {
-                setShowModal(false);
-              }}
-            >
-              取消
-            </Button>
-            <Button type="primary" htmlType="submit" className={styles.modalOk}>
-              确认
-            </Button>
-          </div>
-        </Form>
-      </Modal>
+      {model}
     </div>
   );
 };
