@@ -9,5 +9,13 @@ declare namespace API {
       success: boolean;
       message: string;
     };
+
+    type CurrentUser = {
+      id: number;
+      loginName: string;
+      nickName: string;
+      orgId: number;
+      orgName: string;
+    };
   }
 }
