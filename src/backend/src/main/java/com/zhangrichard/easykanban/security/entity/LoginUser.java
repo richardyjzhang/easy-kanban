@@ -6,14 +6,15 @@ import lombok.Data;
 public class LoginUser {
 
     private Long id;
-    private Long orgId;
 
     private String loginName;
     private String nickName;
 
+    private Long orgId;
+    private String orgName;
+
     private String password;
     private String salt;
 
-    private String remark;
     private Boolean sysAdmin;
 }
