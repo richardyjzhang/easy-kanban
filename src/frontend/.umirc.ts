@@ -30,6 +30,11 @@ export default defineConfig({
           path: '/organization',
           component: './Organization',
         },
+        {
+          name: '项目管理',
+          path: '/project',
+          component: './Project',
+        },
       ],
     },
     {
