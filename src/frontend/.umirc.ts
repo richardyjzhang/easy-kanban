@@ -35,6 +35,11 @@ export default defineConfig({
           path: '/project',
           component: './Project',
         },
+        {
+          name: '人力管理',
+          path: '/worker',
+          component: './Worker',
+        },
       ],
     },
     {
