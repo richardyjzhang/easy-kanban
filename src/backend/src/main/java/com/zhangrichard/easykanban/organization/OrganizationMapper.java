@@ -10,8 +10,13 @@ import java.util.List;
 @Mapper
 public interface OrganizationMapper {
 
-    @Select("SELECT * FROM organization WHERE deleted = 0")
-    List<Organization> getOrganizations();
+    @Select("<script> " +
+            "SELECT * FROM organization WHERE deleted = 0 " +
+            "<if test='id != null'> " +
+            "  AND id = #{id} " +
+            "</if> " +
+            "</script>")
+    List<Organization> getOrganizations(Long id);
 
     @Select("SELECT * FROM organization WHERE id = #{id} AND deleted = 0")
     Organization getOneOrganizations(Long id);

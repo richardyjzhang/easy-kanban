@@ -1,5 +1,6 @@
 package com.zhangrichard.easykanban.organization;
 
+import com.zhangrichard.easykanban.security.AuthUtils;
 import com.zhangrichard.easykanban.security.entity.LoginUser;
 import com.zhangrichard.easykanban.utils.IdWorker;
 import org.apache.shiro.SecurityUtils;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -17,19 +19,18 @@ public class OrganizationController {
     OrganizationMapper  organizationMapper;
 
     @Autowired
+    AuthUtils authUtils;
+
+    @Autowired
     IdWorker idWorker;
 
     @GetMapping("/organizations")
     public List<Organization> getOrganizations(HttpServletResponse response) {
-        // 该接口仅允许系统管理员访问
-        Subject subject = SecurityUtils.getSubject();
-        LoginUser user = (LoginUser) subject.getPrincipal();
-        if (!user.getSysAdmin()) {
-            response.setStatus(403);
-            return null;
-        }
+        LoginUser user = authUtils.currentUser();
 
-        List<Organization> organizations = organizationMapper.getOrganizations();
+        Long orgId = user.getSysAdmin() ? null : user.getOrgId();
+        List<Organization> organizations = organizationMapper.getOrganizations(orgId);
+
         return organizations;
     }
 
@@ -37,9 +38,7 @@ public class OrganizationController {
     public Organization addOrganization(
             @RequestBody Organization organization, HttpServletResponse response) {
         // 该接口仅允许系统管理员访问
-        Subject subject = SecurityUtils.getSubject();
-        LoginUser user = (LoginUser) subject.getPrincipal();
-        if (!user.getSysAdmin()) {
+        if (!authUtils.isSysAdmin()) {
             response.setStatus(403);
             return null;
         }
@@ -72,9 +71,7 @@ public class OrganizationController {
     public void deleteOrganization(
             @PathVariable(name="id") Long id, HttpServletResponse response) {
         // 该接口仅允许系统管理员访问
-        Subject subject = SecurityUtils.getSubject();
-        LoginUser user = (LoginUser) subject.getPrincipal();
-        if (!user.getSysAdmin()) {
+        if (!authUtils.isSysAdmin()) {
             response.setStatus(403);
             return;
         }
@@ -88,9 +85,7 @@ public class OrganizationController {
             @RequestBody Organization organization,
             HttpServletResponse response) {
         // 该接口仅允许系统管理员访问
-        Subject subject = SecurityUtils.getSubject();
-        LoginUser user = (LoginUser) subject.getPrincipal();
-        if (!user.getSysAdmin()) {
+        if (!authUtils.isSysAdmin()) {
             response.setStatus(403);
             return null;
         }
