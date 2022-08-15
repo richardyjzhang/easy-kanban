@@ -4,6 +4,8 @@ package com.zhangrichard.easykanban.security;
 import com.zhangrichard.easykanban.project.Project;
 import com.zhangrichard.easykanban.project.ProjectMapper;
 import com.zhangrichard.easykanban.security.entity.LoginUser;
+import com.zhangrichard.easykanban.worker.Worker;
+import com.zhangrichard.easykanban.worker.WorkerMapper;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,9 @@ public class AuthUtils {
 
     @Autowired
     ProjectMapper projectMapper;
+
+    @Autowired
+    WorkerMapper workerMapper;
 
     public boolean isSysAdmin() {
         Subject subject = SecurityUtils.getSubject();
@@ -40,6 +45,22 @@ public class AuthUtils {
             return true;
         } else {
             return project.getOrgId().equals(projectId);
+        }
+    }
+
+    public boolean hasAuthWorker(Long projectId) {
+        Subject subject = SecurityUtils.getSubject();
+        LoginUser user = (LoginUser) subject.getPrincipal();
+
+        Worker worker = workerMapper.getOneWorker(projectId);
+        if (worker == null) {
+            return false;
+        }
+
+        if (user.getSysAdmin()) {
+            return true;
+        } else {
+            return worker.getOrgId().equals(projectId);
         }
     }
 
