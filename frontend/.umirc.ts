@@ -1,7 +1,25 @@
 import { defineConfig } from "umi";
 
 export default defineConfig({
-  routes: [{ path: "/", component: "index" }],
+  routes: [
+    {
+      path: "/",
+      redirect: "/kanban",
+    },
+    {
+      name: "登录",
+      path: "/login",
+      component: "./login",
+      hideInMenu: true,
+      layout: false,
+    },
+    {
+      path: "/",
+      component: "@/layouts",
+      layout: false,
+      routes: [],
+    },
+  ],
   history: {
     type: "hash",
   },
