@@ -17,7 +17,13 @@ export default defineConfig({
       path: "/",
       component: "@/layouts",
       layout: false,
-      routes: [],
+      routes: [
+        {
+          name: "人力管理",
+          path: "/employee-management",
+          component: "./employee-management",
+        },
+      ],
     },
   ],
   history: {
