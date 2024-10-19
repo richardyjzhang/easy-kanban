@@ -28,7 +28,11 @@ const MyMenu: React.FC = () => {
           children: [
             {
               key: "/employee-management",
-              label: "人力管理",
+              label: "人员管理",
+            },
+            {
+              key: "/project-status-management",
+              label: "人员管理",
             },
           ],
         },

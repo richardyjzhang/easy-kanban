@@ -98,3 +98,70 @@
 方法及路径 `DELETE /employees/{id}`
 
 不设置请求体和响应体
+
+### 获取所有项目状态类型
+
+方法及路径 `GET /project-status`
+
+不设置请求体
+
+响应体
+
+```json
+[
+  {
+    "id": "9a649b1af0b5494b9a6e344d14effcc8",
+    "name": "商K阶段"
+  },
+  {
+    "id": "37c566d790784a48872cc747c2a16df5",
+    "name": "回款阶段"
+  }
+]
+```
+
+### 创建一个项目状态类型
+
+方法及路径 `POST /project-status`
+
+请求体
+
+```json
+{
+  "name": "商K阶段"
+}
+```
+
+响应体
+
+```json
+{
+  "id": "9a649b1af0b5494b9a6e344d14effcc8",
+  "name": "商K阶段"
+}
+```
+
+### 修改一个项目状态类型
+
+方法及路径 `PUT /project-status/{id}`
+
+```json
+{
+  "name": "回款阶段"
+}
+```
+
+响应体
+
+```json
+{
+  "id": "9a649b1af0b5494b9a6e344d14effcc8",
+  "name": "回款阶段"
+}
+```
+
+### 删除一个项目状态类型
+
+方法及路径 `DELETE /project-status/{id}`
+
+不设置请求体和响应体

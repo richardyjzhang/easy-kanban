@@ -19,9 +19,14 @@ export default defineConfig({
       layout: false,
       routes: [
         {
-          name: "人力管理",
+          name: "人员管理",
           path: "/employee-management",
           component: "./employee-management",
+        },
+        {
+          name: "阶段管理",
+          path: "/project-status-management",
+          component: "./project-status-management",
         },
       ],
     },

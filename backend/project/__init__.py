@@ -34,6 +34,9 @@ def create_app():
     from .blueprints.employee import employee as employee_blueprint
     app.register_blueprint(employee_blueprint)
 
+    from .blueprints.project_status import project_status as project_status_blueprint
+    app.register_blueprint(project_status_blueprint)
+
     # 一开始手动建立用户时候用，后面都注释上
     # from .blueprints.user import user as user_blueprint
     # app.register_blueprint(user_blueprint)
