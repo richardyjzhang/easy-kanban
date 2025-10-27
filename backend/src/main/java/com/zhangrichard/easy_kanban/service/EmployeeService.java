@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 public interface EmployeeService {
     ArrayList<Employee> findAllEmployee();
-    Employee findAllEmployeeById(String Id);
-    void addEmployee();
-    void deleteAllData();
+    Employee addOneEmployee(Employee employee);
+    Employee updateOneEmployee(Employee employee, String id);
+    void deleteOneEmployee(String id);
 }

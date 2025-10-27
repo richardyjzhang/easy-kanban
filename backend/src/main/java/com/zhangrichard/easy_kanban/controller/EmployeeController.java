@@ -3,9 +3,7 @@ package com.zhangrichard.easy_kanban.controller;
 import com.zhangrichard.easy_kanban.model.Employee;
 import com.zhangrichard.easy_kanban.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 
@@ -20,18 +18,20 @@ public class EmployeeController {
         return employeeService.findAllEmployee();
     }
 
-    @GetMapping("/employees/{id}")
-    public Employee getEmployeeById(@PathVariable String id) {
-        return employeeService.findAllEmployeeById(id);
+    @PostMapping("/employees")
+    public Employee addOneEmployee(@RequestBody Employee employee) {
+        Employee newEmployee = employeeService.addOneEmployee(employee);
+        return newEmployee;
     }
 
-    @GetMapping("/employees/add")
-    public void addEmployees() {
-        employeeService.addEmployee();
+    @PutMapping("/employees/{id}")
+    public Employee updateOneEmployee(@RequestBody Employee employee, @PathVariable String id) {
+        Employee newEmployee = employeeService.updateOneEmployee(employee, id);
+        return newEmployee;
     }
 
-    @GetMapping("/employees/delete")
-    public void deleteEmployees() {
-        employeeService.deleteAllData();
+    @DeleteMapping("/employees/{id}")
+    public void deleteOneEmployee(@PathVariable String id) {
+        employeeService.deleteOneEmployee(id);
     }
 }

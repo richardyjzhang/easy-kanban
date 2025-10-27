@@ -20,28 +20,20 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public Employee findAllEmployeeById(String Id) {
-        Optional<Employee> opt = employeeRepository.findById(Id);
-        if (opt.isPresent())
-            return opt.get();
-        else
-            return null;
+    public Employee addOneEmployee(Employee employee) {
+        Employee newEmployee = employeeRepository.save(employee);
+        return newEmployee;
     }
 
     @Override
-    public void addEmployee() {
-        ArrayList<Employee> employees = new ArrayList<>();
-        employees.add(new Employee("Zhang San"));
-        employees.add(new Employee("Li Si"));
-        employees.add(new Employee("Wang Wu"));
-
-        for (Employee employee : employees) {
-            employeeRepository.save(employee);
-        }
+    public Employee updateOneEmployee(Employee employee, String id) {
+        employee.setId(id);
+        employeeRepository.save(employee);
+        return employee;
     }
 
     @Override
-    public void deleteAllData() {
-        employeeRepository.deleteAll();
+    public void deleteOneEmployee(String id) {
+        employeeRepository.deleteById(id);
     }
 }
