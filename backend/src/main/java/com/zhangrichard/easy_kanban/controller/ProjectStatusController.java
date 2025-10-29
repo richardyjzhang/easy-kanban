@@ -3,6 +3,7 @@ package com.zhangrichard.easy_kanban.controller;
 import com.zhangrichard.easy_kanban.model.ProjectStatus;
 import com.zhangrichard.easy_kanban.service.ProjectStatusService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -25,9 +26,12 @@ public class ProjectStatusController {
     }
 
     @PutMapping("/project-status/{id}")
-    public ProjectStatus updateOneProjectStatus(@RequestBody ProjectStatus projectStatus, @PathVariable String id) {
+    public ResponseEntity<ProjectStatus> updateOneProjectStatus(@RequestBody ProjectStatus projectStatus, @PathVariable String id) {
         ProjectStatus newProjectStatus = ProjectStatusService.updateOneProjectStatus(projectStatus, id);
-        return newProjectStatus;
+        if (newProjectStatus.getId() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(newProjectStatus);
     }
 
     @DeleteMapping("/project-status/{id}")

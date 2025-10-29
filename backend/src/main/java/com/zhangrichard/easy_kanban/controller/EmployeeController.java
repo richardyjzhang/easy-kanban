@@ -3,6 +3,7 @@ package com.zhangrichard.easy_kanban.controller;
 import com.zhangrichard.easy_kanban.model.Employee;
 import com.zhangrichard.easy_kanban.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -25,9 +26,12 @@ public class EmployeeController {
     }
 
     @PutMapping("/employees/{id}")
-    public Employee updateOneEmployee(@RequestBody Employee employee, @PathVariable String id) {
+    public ResponseEntity<Employee> updateOneEmployee(@RequestBody Employee employee, @PathVariable String id) {
         Employee newEmployee = employeeService.updateOneEmployee(employee, id);
-        return newEmployee;
+        if (newEmployee.getId() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(newEmployee);
     }
 
     @DeleteMapping("/employees/{id}")

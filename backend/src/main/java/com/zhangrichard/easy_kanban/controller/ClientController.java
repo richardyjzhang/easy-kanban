@@ -3,6 +3,7 @@ package com.zhangrichard.easy_kanban.controller;
 import com.zhangrichard.easy_kanban.model.Client;
 import com.zhangrichard.easy_kanban.service.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -25,9 +26,12 @@ public class ClientController {
     }
 
     @PutMapping("/clients/{id}")
-    public Client updateOneClient(@RequestBody Client client, @PathVariable String id) {
+    public ResponseEntity<Client> updateOneClient(@RequestBody Client client, @PathVariable String id) {
         Client newClient = ClientService.updateOneClient(client, id);
-        return newClient;
+        if (newClient.getId() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(newClient);
     }
 
     @DeleteMapping("/clients/{id}")

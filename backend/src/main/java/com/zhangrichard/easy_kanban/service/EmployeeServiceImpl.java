@@ -27,8 +27,11 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Employee updateOneEmployee(Employee employee, String id) {
-        employee.setId(id);
-        employeeRepository.save(employee);
+        Optional<Employee> _employee = employeeRepository.findById(id);
+        if (_employee.isPresent()) {
+            employee.setId(id);
+            employeeRepository.save(employee);
+        }
         return employee;
     }
 
