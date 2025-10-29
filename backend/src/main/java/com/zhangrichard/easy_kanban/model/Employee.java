@@ -23,8 +23,7 @@ public class Employee {
     @JsonIgnore
     private Set<Project> managedProjects = new HashSet<>();
 
-    @OneToMany(targetEntity = ProjectEmployee.class,
-        cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "id.employeeId", orphanRemoval = true)
     @JsonIgnore
     private Set<ProjectEmployee> projectEmployees = new HashSet<>();
 

@@ -22,8 +22,7 @@ public class Project {
 
     private String statusId;
 
-    @OneToMany(targetEntity = ProjectEmployee.class)
-    @JoinColumn(name = "projectId", referencedColumnName = "id")
+    @OneToMany(mappedBy = "id.projectId", orphanRemoval = true)
     @JsonIgnore
     private Set<ProjectEmployee> projectEmployees = new HashSet<>();
 
