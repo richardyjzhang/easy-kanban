@@ -12,31 +12,31 @@ import java.util.Optional;
 public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
-    ProjectRepository ProjectRepository;
+    ProjectRepository projectRepository;
 
     @Override
     public ArrayList<Project> findAllProject() {
-        return (ArrayList<Project>) ProjectRepository.findAll();
+        return (ArrayList<Project>) projectRepository.findAll();
     }
 
     @Override
     public Project addOneProject(Project project) {
-        Project newProject = ProjectRepository.save(project);
+        Project newProject = projectRepository.save(project);
         return newProject;
     }
 
     @Override
     public Project updateOneProject(Project project, String id) {
-        Optional<Project> _project = ProjectRepository.findById(id);
+        Optional<Project> _project = projectRepository.findById(id);
         if (_project.isPresent()) {
             project.setId(id);
-            ProjectRepository.save(project);
+            projectRepository.save(project);
         }
         return project;
     }
 
     @Override
     public void deleteOneProject(String id) {
-        ProjectRepository.deleteById(id);
+        projectRepository.deleteById(id);
     }
 }
