@@ -1,7 +1,11 @@
 package com.zhangrichard.easy_kanban.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Entity
@@ -17,6 +21,11 @@ public class Project {
     private String leaderId;
 
     private String statusId;
+
+    @OneToMany(targetEntity = ProjectEmployee.class)
+    @JoinColumn(name = "projectId", referencedColumnName = "id")
+    @JsonIgnore
+    private Set<ProjectEmployee> projectEmployees = new HashSet<>();
 
     public Project() {
         super();
