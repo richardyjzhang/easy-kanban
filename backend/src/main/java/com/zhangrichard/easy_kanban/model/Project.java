@@ -26,6 +26,10 @@ public class Project {
     @JsonIgnore
     private Set<ProjectEmployee> projectEmployees = new HashSet<>();
 
+    @OneToMany(mappedBy = "projectId", orphanRemoval = true)
+    @JsonIgnore
+    private Set<ProjectLog> projectLogs = new HashSet<>();
+
     public Project() {
         super();
     }
