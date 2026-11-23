@@ -14,6 +14,7 @@ import type { SelectOption } from 'naive-ui'
 import { computed, reactive, watch } from 'vue'
 
 import { STATUS_META, TASK_STATUSES } from '../constants'
+import { dateToTimestamp, timestampToDate } from '../utils/format'
 import type { Person, Project, Task, TaskStatus, TaskInput } from '../types'
 
 const props = withDefaults(
@@ -35,23 +36,6 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{ dirty: [value: boolean] }>()
-
-/** 把 YYYY-MM-DD 转成本地零点的时间戳。 */
-function dateToTimestamp(value: string | null): number | null {
-  if (!value) return null
-  const [year, month, day] = value.split('-').map(Number)
-  if (!year || !month || !day) return null
-  return new Date(year, month - 1, day).getTime()
-}
-
-/** 把时间戳转回本地日期字符串。 */
-function timestampToDate(value: number | null): string | null {
-  if (value === null) return null
-  const date = new Date(value)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${date.getFullYear()}-${month}-${day}`
-}
 
 // 约定：新建时人员默认落到「待分配」，项目默认取传入值。
 const form = reactive({

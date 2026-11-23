@@ -25,10 +25,29 @@ export function formatDateTime(value: string | null | undefined): string {
   return value.slice(0, 16)
 }
 
+/** 把 Date 转成本地时区的 YYYY-MM-DD。 */
+export function dateToISO(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+/** 把 YYYY-MM-DD 转成本地零点的时间戳。 */
+export function dateToTimestamp(value: string | null): number | null {
+  if (!value) return null
+  const [year, month, day] = value.split('-').map(Number)
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day).getTime()
+}
+
+/** 把时间戳转回本地日期字符串。 */
+export function timestampToDate(value: number | null): string | null {
+  if (value === null) return null
+  const date = new Date(value)
+  return dateToISO(date)
+}
+
 /** 返回本地时区的今天，用于判断任务是否逾期。 */
 export function todayISO(): string {
-  const now = new Date()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  return `${now.getFullYear()}-${month}-${day}`
+  return dateToISO(new Date())
 }

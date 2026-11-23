@@ -133,7 +133,7 @@ async function save(): Promise<void> {
 
       <TaskForm
         ref="formRef"
-        :key="task?.id ?? 'new'"
+        :key="task?.id ?? `new-${defaultPersonId ?? 0}-${defaultProjectId ?? 0}`"
         :task="task"
         :people="personOptions"
         :projects="projectOptions"

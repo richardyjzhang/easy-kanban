@@ -6,8 +6,8 @@ import { getToken } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 import AppLayout from '../layouts/AppLayout.vue'
 import LoginPage from '../pages/LoginPage.vue'
+import MatrixPage from '../pages/MatrixPage.vue'
 import SettingsPage from '../pages/SettingsPage.vue'
-import TaskListPage from '../pages/TaskListPage.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -27,7 +27,7 @@ const router = createRouter({
       path: '/pc',
       component: AppLayout,
       children: [
-        { path: '', name: 'tasks', component: TaskListPage },
+        { path: '', name: 'matrix', component: MatrixPage },
         { path: 'settings', name: 'settings', component: SettingsPage },
       ],
     },

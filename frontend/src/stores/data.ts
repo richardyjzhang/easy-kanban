@@ -149,6 +149,26 @@ export const useDataStore = defineStore('data', () => {
     people.value = people.value.filter((item) => item.id !== id)
   }
 
+  /** 保存人员顺序：先改本地 sort_order，失败时按快照回滚。 */
+  async function reorderPeople(ids: number[]): Promise<void> {
+    const snapshot = people.value.map((item) => ({ id: item.id, sort_order: item.sort_order }))
+    people.value = people.value.map((item) => {
+      const index = ids.indexOf(item.id)
+      return index >= 0 ? { ...item, sort_order: (index + 1) * 10 } : item
+    })
+    people.value.sort(byOrder)
+    try {
+      await api.savePeopleOrder(ids)
+    } catch (cause) {
+      people.value = people.value.map((item) => {
+        const previous = snapshot.find((entry) => entry.id === item.id)
+        return previous ? { ...item, sort_order: previous.sort_order } : item
+      })
+      people.value.sort(byOrder)
+      throw cause
+    }
+  }
+
   /** 插入或替换一个项目并保持排序。 */
   function upsertProject(project: Project): void {
     const index = projects.value.findIndex((item) => item.id === project.id)
@@ -195,6 +215,26 @@ export const useDataStore = defineStore('data', () => {
     projects.value = projects.value.filter((item) => item.id !== id)
   }
 
+  /** 保存项目顺序：先改本地 sort_order，失败时按快照回滚。 */
+  async function reorderProjects(ids: number[]): Promise<void> {
+    const snapshot = projects.value.map((item) => ({ id: item.id, sort_order: item.sort_order }))
+    projects.value = projects.value.map((item) => {
+      const index = ids.indexOf(item.id)
+      return index >= 0 ? { ...item, sort_order: (index + 1) * 10 } : item
+    })
+    projects.value.sort(byOrder)
+    try {
+      await api.saveProjectsOrder(ids)
+    } catch (cause) {
+      projects.value = projects.value.map((item) => {
+        const previous = snapshot.find((entry) => entry.id === item.id)
+        return previous ? { ...item, sort_order: previous.sort_order } : item
+      })
+      projects.value.sort(byOrder)
+      throw cause
+    }
+  }
+
   /** 新建任务。 */
   async function createTask(input: TaskInput): Promise<Task> {
     const task = await api.createTask(input)
@@ -239,11 +279,13 @@ export const useDataStore = defineStore('data', () => {
     archivePerson,
     restorePerson,
     deletePerson,
+    reorderPeople,
     createProject,
     updateProject,
     archiveProject,
     restoreProject,
     deleteProject,
+    reorderProjects,
     createTask,
     updateTask,
     deleteTask,

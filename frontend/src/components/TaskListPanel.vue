@@ -7,6 +7,7 @@ import { computed } from 'vue'
 import StatusDot from './StatusDot.vue'
 import { NEXT_STATUS, STATUS_META } from '../constants'
 import { formatDateRange, todayISO } from '../utils/format'
+import { sortTasksForCell } from '../utils/taskOrder'
 import type { Person, Project, Task, TaskStatus } from '../types'
 
 const props = withDefaults(
@@ -15,8 +16,10 @@ const props = withDefaults(
     people: Person[]
     projects: Project[]
     busyIds?: number[]
+    /** 格子抽屉里人员、项目已由标题给出，隐藏这两列。 */
+    showContext?: boolean
   }>(),
-  { busyIds: () => [] },
+  { busyIds: () => [], showContext: true },
 )
 
 const emit = defineEmits<{
@@ -36,21 +39,8 @@ const TAG_TYPE: Record<TaskStatus, 'default' | 'info' | 'error' | 'success'> = {
   done: 'success',
 }
 
-// 约定：未完成在前、已完成置底；有开始日的按日期升序，日期不全的排最后。
-const sortedTasks = computed(() => {
-  return [...props.tasks].sort((a, b) => {
-    const aDone = a.status === 'done' ? 1 : 0
-    const bDone = b.status === 'done' ? 1 : 0
-    if (aDone !== bDone) return aDone - bDone
-
-    const aStart = a.start_date ?? '9999-12-31'
-    const bStart = b.start_date ?? '9999-12-31'
-    if (aStart !== bStart) return aStart < bStart ? -1 : 1
-
-    if (a.created_at !== b.created_at) return a.created_at < b.created_at ? -1 : 1
-    return a.id - b.id
-  })
-})
+// 约定：格子内排序规则与其他视图一致（R7）。
+const sortedTasks = computed(() => sortTasksForCell(props.tasks))
 
 /** 取人员姓名，找不到时给出兜底文案。 */
 function personName(id: number): string {
@@ -86,13 +76,19 @@ function cycleTitle(task: Task): string {
 </script>
 
 <template>
-  <n-table :bordered="false" :single-line="false" size="small" class="task-table">
+  <n-table
+    :bordered="false"
+    :single-line="false"
+    size="small"
+    class="task-table"
+    :class="{ compact: !showContext }"
+  >
     <thead>
       <tr>
         <th class="col-status">状态</th>
         <th>任务</th>
-        <th class="col-person">人员</th>
-        <th class="col-project">项目</th>
+        <th v-if="showContext" class="col-person">人员</th>
+        <th v-if="showContext" class="col-project">项目</th>
         <th class="col-date">日期</th>
         <th class="col-actions">操作</th>
       </tr>
@@ -124,10 +120,10 @@ function cycleTitle(task: Task): string {
           <div class="task-title" :class="{ done: task.status === 'done' }">{{ task.title }}</div>
           <div v-if="task.note" class="task-note">{{ task.note }}</div>
         </td>
-        <td>
+        <td v-if="showContext">
           <span :class="{ pending: isPending(task.person_id) }">{{ personName(task.person_id) }}</span>
         </td>
-        <td>{{ projectName(task.project_id) }}</td>
+        <td v-if="showContext">{{ projectName(task.project_id) }}</td>
         <td class="col-date">
           <span :class="{ overdue: isOverdue(task) }">
             {{ formatDateRange(task.start_date, task.end_date) }}
@@ -255,6 +251,30 @@ function cycleTitle(task: Task): string {
 
 .overdue {
   color: var(--danger);
+}
+
+/* 格子抽屉里宽度有限，压缩固定列，把空间留给任务标题。 */
+.task-table.compact :deep(th),
+.task-table.compact :deep(td) {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.task-table.compact .col-status {
+  width: 86px;
+}
+
+.task-table.compact .col-date {
+  width: 104px;
+  font-size: 12px;
+}
+
+.task-table.compact .col-actions {
+  width: 124px;
+}
+
+.task-table.compact .task-note {
+  max-width: 220px;
 }
 
 @media (max-width: 900px) {

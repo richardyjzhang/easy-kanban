@@ -40,7 +40,7 @@ src/
 ├─ stores/         # auth / people / projects / tasks / filters / ui
 ├─ components/     # 通用组件与业务组件（TaskForm、TaskListPanel、设置页分区等）
 ├─ layouts/        # 页面外壳（当前为 PC 的 AppLayout；M4 增加 H5 外壳）
-├─ pages/          # 路由页面（LoginPage、TaskListPage、SettingsPage）
+├─ pages/          # 路由页面（LoginPage、MatrixPage、SettingsPage）
 ├─ types/          # Person Project Task 及请求/响应类型
 ├─ utils/          # 日期格式化、滚动锁等纯函数
 └─ styles/         # 全局样式与设计变量
@@ -114,18 +114,21 @@ src/
 
 | 组件 | 职责 |
 |---|---|
-| `MatrixGrid` | 网格布局、滚动同步、行列表头吸附 |
+| `MatrixGrid` | 网格布局、滚动同步、行列表头吸附、行列拖拽排序（行头／列头内联在此） |
 | `MatrixCell` | 单格任务堆叠、`+N`、hover 新建 |
-| `TaskChip` | 状态点 + 标题 + 日期（无日期显示「—」），紧凑模式与完整模式 |
-| `RowHeader` / `ColHeader` | 名称、颜色、拖拽排序、拖动把手 |
-| `PendingRowHeader` | 「待分配」行头：锁标识与未指派数量 |
+| `TaskChip` | 状态点 + 标题 + 日期（无日期显示「—」） |
+| `FilterBar` | 预设范围（本周／下周／全部／自定义）与当前区间显示 |
+| `CellDrawer` | 格子抽屉 D1：该格全部任务、状态切换、编辑／删除与新建入口 |
 | `StatusDot` | 状态色点，配合 Naive UI `NTag` 使用 |
-| `FilterBar` | 预设范围 + 自定义范围 |
-| `TransposeButton` | 转置，带旋转动效 |
 | `TaskForm` | 新建／编辑共用表单与校验 |
-| `TaskListPanel` | 任务列表容器，分组与排序 |
-| `SettingTable` | 人员／项目表格（PC，基于 `NTable`） |
-| `EmptyState` | 空矩阵、空归档、空筛选结果三种文案（基于 `NEmpty`） |
+| `TaskListPanel` | 任务列表容器，分组与排序（格子抽屉里隐藏人员／项目列） |
+| `TaskDrawer` | 任务抽屉 D2：编辑全部字段、删除 |
+| `PeopleSection` / `ProjectsSection` | 设置页人员／项目表格、归档分组与恢复 |
+| `PersonDialog` / `ProjectDialog` | 新建／编辑人员与项目 |
+| `ColorDot` / `ColorPicker` | 颜色展示与色板选择 |
+| `AccountSection` | 修改密码与退出登录 |
+
+转置按钮与空状态文案当前直接写在 `MatrixPage` 里，未单独拆组件。
 
 ## 7. 交互与反馈约定
 
