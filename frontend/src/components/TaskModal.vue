@@ -17,6 +17,8 @@ const props = defineProps<{
   defaultTitle?: string
   defaultStartDate?: string | null
   defaultEndDate?: string | null
+  /** H5 用全屏 sheet 形态，PC 保持居中弹窗。 */
+  sheet?: boolean
 }>()
 
 const emit = defineEmits<{ 'update:open': [value: boolean] }>()
@@ -29,6 +31,13 @@ const saving = ref(false)
 const serverErrors = ref<Record<string, string>>({})
 
 const title = computed(() => (props.task ? '编辑任务' : '新建任务'))
+
+// H5 铺满视口，PC 维持 560px 居中；只改外观，表单与保存逻辑共用一份。
+const modalStyle = computed(() =>
+  props.sheet
+    ? { width: '100vw', height: '100dvh', maxHeight: 'none', borderRadius: '0', margin: '0' }
+    : { width: 'min(560px, 94vw)' },
+)
 
 // 人员下拉默认只给在册人员；若任务原本指向已归档人员，补进选项以保留当前值。
 const personOptions = computed<Person[]>(() => {
@@ -123,8 +132,9 @@ async function save(): Promise<void> {
     :show="open"
     preset="card"
     class="task-modal"
+    :class="{ 'is-sheet': sheet }"
     :bordered="false"
-    :style="{ width: 'min(560px, 94vw)' }"
+    :style="modalStyle"
     :mask-closable="!saving"
     closable
     @update:show="handleShow"
@@ -190,5 +200,21 @@ async function save(): Promise<void> {
 .modal-body {
   max-height: 64vh;
   overflow: auto;
+}
+
+/* H5 全屏 sheet：头部、内容、底部按钮纵向排满视口，表单在中间滚动。 */
+.task-modal.is-sheet {
+  display: flex;
+  flex-direction: column;
+}
+
+.task-modal.is-sheet :deep(.n-card__content) {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.task-modal.is-sheet .modal-body {
+  max-height: none;
+  overflow: visible;
 }
 </style>

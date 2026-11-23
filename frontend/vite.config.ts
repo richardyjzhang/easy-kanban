@@ -8,8 +8,8 @@ import vue from '@vitejs/plugin-vue'
  * src/api/client.ts 会跟随 import.meta.env.BASE_URL 拼出 API 地址，
  * 开发环境则通过下面的 proxy 转发到 Flask。
  */
-export default defineConfig({
-  base: '/',
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/easy-kanban/' : '/',
   plugins: [vue()],
   server: {
     // 局域网 / 手机调试要能被外部访问；Vite 默认只绑 localhost。
@@ -22,4 +22,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

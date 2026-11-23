@@ -39,7 +39,7 @@ src/
 ├─ api/            # client.ts（baseURL = BASE + '/api'，注入 Bearer，统一错误）
 ├─ stores/         # auth / people / projects / tasks / filters / ui
 ├─ components/     # 通用组件与业务组件（TaskForm、TaskListPanel、设置页分区等）
-├─ layouts/        # 页面外壳（当前为 PC 的 AppLayout；M4 增加 H5 外壳）
+├─ layouts/        # 页面外壳（PC 的 AppLayout、H5 的 MobileLayout）
 ├─ pages/          # 路由页面（LoginPage、MatrixPage、SettingsPage）
 ├─ types/          # Person Project Task 及请求/响应类型
 ├─ utils/          # 日期格式化、滚动锁等纯函数
@@ -83,6 +83,7 @@ src/
 ### P4 H5 矩阵页
 
 - **顶部栏**（单行，高度 ≤ 52px）：筛选下拉（显示当前范围）· 转置图标按钮。
+- **筛选弹层**：底部弹出，预设四项 + 自定义起止日（两个单日选择器，避免双月面板超宽）。
 - **矩阵区**：横向滚动，首列人员列 96px 吸附，格子宽 120px，每格仅 1 条任务标题，超出「+N」；第一行为「待分配」，样式与 PC 一致。
 - **底部 Tab**：矩阵 / 设置，两个入口。
 - **点格子**：从底部弹出全屏 sheet，展示该格任务列表与新建按钮；「待分配」行的 sheet 里点任务即可选人员指派。
@@ -123,13 +124,18 @@ src/
 | `StatusDot` | 状态色点，配合 Naive UI `NTag` 使用 |
 | `TaskForm` | 新建／编辑共用表单与校验 |
 | `TaskListPanel` | 任务列表容器，分组与排序（`showContext` 控制人员／项目列） |
-| `TaskModal` | 任务弹窗 D2：编辑全部字段、删除 |
+| `TaskModal` | 任务弹窗 D2：编辑全部字段、删除；`sheet` 为真时在 H5 铺满视口 |
 | `PeopleSection` / `ProjectsSection` | 设置页人员／项目表格、归档分组与恢复 |
 | `PersonDialog` / `ProjectDialog` | 新建／编辑人员与项目 |
 | `ColorDot` / `ColorPicker` | 颜色展示与色板选择 |
-| `AccountSection` | 修改密码与退出登录 |
+| `AccountSection` | 当前账号、修改密码与退出登录 |
+| `PasswordSection` | 修改密码表单，PC 与 H5 共用 |
+| `MobileMatrix` / `MobileCell` | H5 矩阵：首列吸附、横向滚动、每格 1 条任务与 `+N` |
+| `MobileCellSheet` / `MobileTaskList` | H5 格子弹层与任务列表（编辑／状态切换／删除） |
+| `MobileFilterSheet` | H5 日期筛选底部弹层（预设 + 自定义起止日） |
+| `MobilePageHead` | H5 设置子页顶栏（返回 + 标题 + 右侧操作） |
 
-转置按钮与空状态文案当前直接写在 `MatrixPage` 里，未单独拆组件。
+转置按钮与空状态文案当前直接写在 `MatrixPage` / `MobileMatrixPage` 里，未单独拆组件。
 
 ## 7. 交互与反馈约定
 

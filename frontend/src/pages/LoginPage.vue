@@ -9,6 +9,7 @@ import AuroraBackdrop from '../components/AuroraBackdrop.vue'
 import BrandMark from '../components/BrandMark.vue'
 import { messageOfError } from '../api/client'
 import { useAuthStore } from '../stores/auth'
+import { defaultRoute } from '../utils/device'
 
 const route = useRoute()
 const router = useRouter()
@@ -49,7 +50,7 @@ async function submit(): Promise<void> {
     const redirect =
       typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
         ? route.query.redirect
-        : '/pc'
+        : defaultRoute()
     await router.replace(redirect)
   } catch (cause) {
     error.value = messageOfError(cause)

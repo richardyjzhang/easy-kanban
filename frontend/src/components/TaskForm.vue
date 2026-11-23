@@ -12,6 +12,7 @@ import {
 } from 'naive-ui'
 import type { SelectOption } from 'naive-ui'
 import { computed, reactive, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { STATUS_META, TASK_STATUSES } from '../constants'
 import { dateToTimestamp, timestampToDate } from '../utils/format'
@@ -42,6 +43,11 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{ dirty: [value: boolean] }>()
+
+const route = useRoute()
+
+// 提示里的「设置」跟随当前端，H5 不会把用户带回 PC 布局。
+const settingsPath = computed(() => (route.path.startsWith('/m') ? '/m/settings' : '/pc/settings'))
 
 // 约定：新建时人员默认落到「待分配」，项目、标题与日期取传入的默认值。
 const form = reactive({
@@ -164,7 +170,7 @@ defineExpose({ validate })
 <template>
   <div class="task-form" :class="{ disabled }">
     <n-alert v-if="!projects.length" type="warning" :show-icon="true" class="notice">
-      还没有可用项目，请先到 <RouterLink to="/pc/settings">设置</RouterLink> 里创建一个项目。
+      还没有可用项目，请先到 <RouterLink :to="settingsPath">设置</RouterLink> 里创建一个项目。
     </n-alert>
 
     <n-form :model="form" label-placement="top" :show-require-mark="false">

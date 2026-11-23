@@ -16,10 +16,16 @@ import { message } from '../feedback'
 import { useDataStore } from '../stores/data'
 import { formatRangeLabel, resolveRange, taskInRange } from '../utils/dateRange'
 import type { FilterState } from '../utils/dateRange'
-import { groupTasksByCell } from '../utils/matrix'
+import {
+  buildPersonAxes,
+  buildProjectAxes,
+  countTasksByPerson,
+  countTasksByProject,
+  groupTasksByCell,
+} from '../utils/matrix'
 import { sortTasksForCell } from '../utils/taskOrder'
 import { toTaskInput } from '../utils/task'
-import type { MatrixAxis, MatrixCellKey } from '../types/matrix'
+import type { MatrixCellKey } from '../types/matrix'
 import type { Task } from '../types'
 
 const data = useDataStore()
@@ -76,21 +82,8 @@ const matrixTasks = computed(() => {
 const cells = computed(() => groupTasksByCell(matrixTasks.value))
 
 /** 当前筛选下每行／每列的任务数，用于空行／空列标记。 */
-const countByPerson = computed(() => {
-  const counts = new Map<number, number>()
-  for (const task of matrixTasks.value) {
-    counts.set(task.person_id, (counts.get(task.person_id) ?? 0) + 1)
-  }
-  return counts
-})
-
-const countByProject = computed(() => {
-  const counts = new Map<number, number>()
-  for (const task of matrixTasks.value) {
-    counts.set(task.project_id, (counts.get(task.project_id) ?? 0) + 1)
-  }
-  return counts
-})
+const countByPerson = computed(() => countTasksByPerson(matrixTasks.value))
+const countByProject = computed(() => countTasksByProject(matrixTasks.value))
 
 /** 未指派任务总数（含已完成、不受日期筛选影响）：「待分配」行是否压缩看它。 */
 const pendingTaskCount = computed(() => {
@@ -100,42 +93,15 @@ const pendingTaskCount = computed(() => {
 })
 
 /** 人员轴：系统人员「待分配」固定排在第一行，为空时压缩成窄行。 */
-const personAxes = computed<MatrixAxis[]>(() =>
-  data.activePeople.map((person) => {
-    const count = person.is_system
-      ? pendingTaskCount.value
-      : (countByPerson.value.get(person.id) ?? 0)
-    return {
-      id: person.id,
-      kind: 'person',
-      name: person.name,
-      color: person.color,
-      isSystem: person.is_system,
-      // 系统人员行不参与空行标记，只按未指派总数决定是否压缩。
-      empty: !person.is_system && count === 0,
-      count,
-      compact: person.is_system && count === 0,
-    }
-  }),
+const personAxes = computed(() =>
+  buildPersonAxes(data.activePeople, countByPerson.value, pendingTaskCount.value),
 )
 
 // 「待分配」不算真实人员，人员管理列表和矩阵空状态都以它之外的人数判断。
 const realPeople = computed(() => data.activePeople.filter((person) => !person.is_system))
 
-const projectAxes = computed<MatrixAxis[]>(() =>
-  data.activeProjects.map((project) => {
-    const count = countByProject.value.get(project.id) ?? 0
-    return {
-      id: project.id,
-      kind: 'project',
-      name: project.name,
-      color: project.color,
-      isSystem: false,
-      empty: count === 0,
-      count,
-      compact: false,
-    }
-  }),
+const projectAxes = computed(() =>
+  buildProjectAxes(data.activeProjects, countByProject.value),
 )
 
 const rows = computed(() => (transposed.value ? projectAxes.value : personAxes.value))
