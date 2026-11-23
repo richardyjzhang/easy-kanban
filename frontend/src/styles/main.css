@@ -166,3 +166,32 @@ textarea {
   color: var(--danger);
   font-size: 12px;
 }
+
+/* 拖拽改归属后的撤销 toast：message 内容渲染在 body 下，不能用组件 scoped 样式。 */
+.undo-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.undo-toast-text {
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.undo-toast-action {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.undo-toast-action:hover {
+  text-decoration: underline;
+}

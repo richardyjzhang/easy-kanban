@@ -28,7 +28,8 @@ import type { Person } from '../types'
 
 const data = useDataStore()
 
-const active = computed(() => data.activePeople)
+// 约定：系统人员「待分配」只在矩阵里出现，不进入人员管理列表。
+const active = computed(() => data.activePeople.filter((person) => !person.is_system))
 const archived = computed(() => data.archivedPeople)
 
 const dialogOpen = ref(false)

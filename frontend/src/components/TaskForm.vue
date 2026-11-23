@@ -24,12 +24,18 @@ const props = withDefaults(
     projects: Project[]
     defaultPersonId?: number
     defaultProjectId?: number
+    defaultTitle?: string
+    defaultStartDate?: string | null
+    defaultEndDate?: string | null
     disabled?: boolean
     serverErrors?: Record<string, string>
   }>(),
   {
     defaultPersonId: 0,
     defaultProjectId: 0,
+    defaultTitle: '',
+    defaultStartDate: null,
+    defaultEndDate: null,
     disabled: false,
     serverErrors: () => ({}),
   },
@@ -37,13 +43,13 @@ const props = withDefaults(
 
 const emit = defineEmits<{ dirty: [value: boolean] }>()
 
-// 约定：新建时人员默认落到「待分配」，项目默认取传入值。
+// 约定：新建时人员默认落到「待分配」，项目、标题与日期取传入的默认值。
 const form = reactive({
-  title: props.task?.title ?? '',
+  title: props.task?.title ?? props.defaultTitle,
   person_id: (props.task?.person_id ?? props.defaultPersonId ?? null) as number | null,
   project_id: (props.task?.project_id ?? props.defaultProjectId ?? null) as number | null,
-  startAt: dateToTimestamp(props.task?.start_date ?? null),
-  endAt: dateToTimestamp(props.task?.end_date ?? null),
+  startAt: dateToTimestamp(props.task?.start_date ?? props.defaultStartDate),
+  endAt: dateToTimestamp(props.task?.end_date ?? props.defaultEndDate),
   status: (props.task?.status ?? 'todo') as TaskStatus,
   note: props.task?.note ?? '',
 })

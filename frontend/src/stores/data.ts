@@ -5,6 +5,8 @@ import { defineStore } from 'pinia'
 
 import { api } from '../api'
 import { messageOfError } from '../api/client'
+import { NEXT_STATUS } from '../constants'
+import { toTaskInput } from '../utils/task'
 import type {
   Person,
   PersonInput,
@@ -97,6 +99,7 @@ export const useDataStore = defineStore('data', () => {
     people.value = []
     projects.value = []
     tasks.value = []
+    statusBusyIds.value = []
     loading.value = false
     loaded.value = false
     error.value = null
@@ -242,12 +245,45 @@ export const useDataStore = defineStore('data', () => {
     return task
   }
 
-  /** 全量更新任务并替换本地对象。 */
+  /** 全量更新任务；先改本地再请求，失败时按快照回滚。 */
   async function updateTask(id: number, input: TaskInput): Promise<Task> {
-    const task = await api.updateTask(id, input)
     const index = tasks.value.findIndex((item) => item.id === id)
-    if (index >= 0) tasks.value[index] = task
-    return task
+    // 约定：写操作即时生效，本地先套用新值，避免等请求回来才动界面。
+    const previous = index >= 0 ? tasks.value[index] : null
+    if (previous) tasks.value[index] = { ...previous, ...input }
+
+    try {
+      const task = await api.updateTask(id, input)
+      const nextIndex = tasks.value.findIndex((item) => item.id === id)
+      if (nextIndex >= 0) tasks.value[nextIndex] = task
+      return task
+    } catch (cause) {
+      if (previous) {
+        const rollbackIndex = tasks.value.findIndex((item) => item.id === id)
+        if (rollbackIndex >= 0) tasks.value[rollbackIndex] = previous
+      }
+      throw cause
+    }
+  }
+
+  // 正在切换状态的任务：快速连点时挡住后续请求，避免旧响应覆盖新状态。
+  const statusBusyIds = ref<number[]>([])
+
+  /** 点击状态点循环切换状态；同一任务同时只允许一次请求。 */
+  async function cycleTaskStatus(id: number): Promise<Task | null> {
+    if (statusBusyIds.value.includes(id)) return null
+    const task = tasks.value.find((item) => item.id === id)
+    if (!task) return null
+
+    statusBusyIds.value = [...statusBusyIds.value, id]
+    try {
+      return await updateTask(id, {
+        ...toTaskInput(task),
+        status: NEXT_STATUS[task.status],
+      })
+    } finally {
+      statusBusyIds.value = statusBusyIds.value.filter((item) => item !== id)
+    }
   }
 
   /** 删除任务。 */
@@ -288,6 +324,8 @@ export const useDataStore = defineStore('data', () => {
     reorderProjects,
     createTask,
     updateTask,
+    statusBusyIds,
+    cycleTaskStatus,
     deleteTask,
   }
 })

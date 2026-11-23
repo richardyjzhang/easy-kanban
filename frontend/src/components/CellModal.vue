@@ -4,14 +4,13 @@
 <script setup lang="ts">
 import { NButton, NIcon, NModal, NSpace } from 'naive-ui'
 import { AddOutline } from '@vicons/ionicons5'
-import { computed, reactive } from 'vue'
+import { computed } from 'vue'
 
 import TaskListPanel from './TaskListPanel.vue'
 import { messageOfError } from '../api/client'
-import { NEXT_STATUS } from '../constants'
 import { dialog, message } from '../feedback'
 import { useDataStore } from '../stores/data'
-import type { Person, Project, Task, TaskInput } from '../types'
+import type { Person, Project, Task } from '../types'
 
 const props = withDefaults(
   defineProps<{
@@ -32,10 +31,6 @@ const emit = defineEmits<{
 }>()
 
 const data = useDataStore()
-
-// 正在切换状态的任务，防止快速连点产生错序。
-const busy = reactive(new Set<number>())
-const busyIds = computed(() => Array.from(busy))
 
 const title = computed(() => {
   if (!props.person || !props.project) return '格子任务'
@@ -65,29 +60,12 @@ function handleShow(value: boolean): void {
   if (!value) close()
 }
 
-/** 把任务对象转成接口需要的全量输入。 */
-function toInput(task: Task): TaskInput {
-  return {
-    title: task.title,
-    person_id: task.person_id,
-    project_id: task.project_id,
-    start_date: task.start_date,
-    end_date: task.end_date,
-    status: task.status,
-    note: task.note,
-  }
-}
-
-/** 点击状态点循环切换状态（约定走全量 PUT）。 */
+/** 点击状态点循环切换状态（约定走全量 PUT，store 内做防连点）。 */
 async function cycleStatus(task: Task): Promise<void> {
-  if (busy.has(task.id)) return
-  busy.add(task.id)
   try {
-    await data.updateTask(task.id, { ...toInput(task), status: NEXT_STATUS[task.status] })
+    await data.cycleTaskStatus(task.id)
   } catch (cause) {
     message.error(messageOfError(cause))
-  } finally {
-    busy.delete(task.id)
   }
 }
 
@@ -134,7 +112,7 @@ function askDelete(task: Task): void {
         :tasks="tasks"
         :people="data.people"
         :projects="data.projects"
-        :busy-ids="busyIds"
+        :busy-ids="data.statusBusyIds"
         @edit="emit('edit', $event)"
         @delete="askDelete"
         @cycle="cycleStatus"

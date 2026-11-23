@@ -1,14 +1,15 @@
-<!-- PC 矩阵页（M2）：日期筛选、行列转置、空行／空列标记与行列拖拽排序。
-     数据一次性从 /api/state 拉取，切周、转置、排序都不再请求列表接口。 -->
+<!-- PC 矩阵页（M3）：日期筛选、行列转置、空行／空列标记、行列拖拽排序，
+     以及格内快速新建、任务拖拽改归属、状态点切换与「待分配」窄行。 -->
 <script setup lang="ts">
 import { NButton, NCard, NEmpty, NIcon, NSpace, NSpin } from 'naive-ui'
 import { AddOutline, RefreshOutline, SwapHorizontalOutline } from '@vicons/ionicons5'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, h, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import CellModal from '../components/CellModal.vue'
 import FilterBar from '../components/FilterBar.vue'
 import MatrixGrid from '../components/MatrixGrid.vue'
+import QuickCreateModal from '../components/QuickCreateModal.vue'
 import TaskModal from '../components/TaskModal.vue'
 import { messageOfError } from '../api/client'
 import { message } from '../feedback'
@@ -17,6 +18,7 @@ import { formatRangeLabel, resolveRange, taskInRange } from '../utils/dateRange'
 import type { FilterState } from '../utils/dateRange'
 import { groupTasksByCell } from '../utils/matrix'
 import { sortTasksForCell } from '../utils/taskOrder'
+import { toTaskInput } from '../utils/task'
 import type { MatrixAxis, MatrixCellKey } from '../types/matrix'
 import type { Task } from '../types'
 
@@ -35,7 +37,20 @@ const taskModalOpen = ref(false)
 // 从格子弹窗点「编辑／新建」时收起格子，任务弹窗关闭后再回到那个格子。
 const reopenCell = ref(false)
 const editingTask = ref<Task | null>(null)
-const createDefaults = ref<{ personId: number; projectId: number } | null>(null)
+
+interface CreateDefaults {
+  personId: number
+  projectId: number
+  startDate: string | null
+  endDate: string | null
+  title: string
+}
+
+const createDefaults = ref<CreateDefaults | null>(null)
+
+// 快速新建（D3）单独一层，只收标题；「更多字段」再切到完整表单。
+const quickOpen = ref(false)
+const quickDefaults = ref<CreateDefaults | null>(null)
 
 onMounted(() => {
   // 错误已写入 store，页面会展示重试入口。
@@ -77,31 +92,50 @@ const countByProject = computed(() => {
   return counts
 })
 
-/** 人员轴：系统人员「待分配」固定排在第一行。 */
+/** 未指派任务总数（含已完成、不受日期筛选影响）：「待分配」行是否压缩看它。 */
+const pendingTaskCount = computed(() => {
+  const id = data.systemPerson?.id
+  if (!id) return 0
+  return data.tasks.filter((task) => task.person_id === id).length
+})
+
+/** 人员轴：系统人员「待分配」固定排在第一行，为空时压缩成窄行。 */
 const personAxes = computed<MatrixAxis[]>(() =>
-  data.activePeople.map((person) => ({
-    id: person.id,
-    kind: 'person',
-    name: person.name,
-    color: person.color,
-    isSystem: person.is_system,
-    // 系统人员行固定显示、不做空行标记；为空时压缩成窄行留给 M3 处理。
-    empty: !person.is_system && !countByPerson.value.has(person.id),
-  })),
+  data.activePeople.map((person) => {
+    const count = person.is_system
+      ? pendingTaskCount.value
+      : (countByPerson.value.get(person.id) ?? 0)
+    return {
+      id: person.id,
+      kind: 'person',
+      name: person.name,
+      color: person.color,
+      isSystem: person.is_system,
+      // 系统人员行不参与空行标记，只按未指派总数决定是否压缩。
+      empty: !person.is_system && count === 0,
+      count,
+      compact: person.is_system && count === 0,
+    }
+  }),
 )
 
 // 「待分配」不算真实人员，人员管理列表和矩阵空状态都以它之外的人数判断。
 const realPeople = computed(() => data.activePeople.filter((person) => !person.is_system))
 
 const projectAxes = computed<MatrixAxis[]>(() =>
-  data.activeProjects.map((project) => ({
-    id: project.id,
-    kind: 'project',
-    name: project.name,
-    color: project.color,
-    isSystem: false,
-    empty: !countByProject.value.has(project.id),
-  })),
+  data.activeProjects.map((project) => {
+    const count = countByProject.value.get(project.id) ?? 0
+    return {
+      id: project.id,
+      kind: 'project',
+      name: project.name,
+      color: project.color,
+      isSystem: false,
+      empty: count === 0,
+      count,
+      compact: false,
+    }
+  }),
 )
 
 const rows = computed(() => (transposed.value ? projectAxes.value : personAxes.value))
@@ -155,11 +189,43 @@ function openCell(personId: number, projectId: number): void {
   cellModalOpen.value = true
 }
 
-/** 在某个格子新建任务。 */
-function openCreate(personId: number, projectId: number): void {
+/** 快速新建弹层里的人员对象。 */
+const quickPerson = computed(() =>
+  quickDefaults.value ? (data.personMap.get(quickDefaults.value.personId) ?? null) : null,
+)
+
+/** 快速新建弹层里的项目对象。 */
+const quickProject = computed(() =>
+  quickDefaults.value ? (data.projectMap.get(quickDefaults.value.projectId) ?? null) : null,
+)
+
+/** 默认日期取当前筛选范围；「全部」时不填日期。 */
+function defaultDates(): { startDate: string | null; endDate: string | null } {
+  const current = range.value
+  return current
+    ? { startDate: current.start, endDate: current.end }
+    : { startDate: null, endDate: null }
+}
+
+/** 在某个格子打开完整新建表单；标题可由快速新建带过来。 */
+function openCreate(personId: number, projectId: number, title = ''): void {
   editingTask.value = null
-  createDefaults.value = { personId, projectId }
+  createDefaults.value = { personId, projectId, title, ...defaultDates() }
   openTaskModal()
+}
+
+/** 在某个格子打开快速新建（D3）：只填标题。 */
+function openQuickCreate(personId: number, projectId: number): void {
+  quickDefaults.value = { personId, projectId, title: '', ...defaultDates() }
+  quickOpen.value = true
+}
+
+/** 快速新建点「更多字段」：收起轻量层，切到完整表单，标题保留。 */
+function handleQuickMore(title: string): void {
+  const target = quickDefaults.value
+  quickOpen.value = false
+  if (!target) return
+  openCreate(target.personId, target.projectId, title)
 }
 
 /** 编辑任务。 */
@@ -184,7 +250,7 @@ function handleTaskModalOpen(value: boolean): void {
   }
 }
 
-/** 从格子弹窗底部的新建入口进入。 */
+/** 从格子弹窗底部的新建入口进入完整表单。 */
 function createFromCell(): void {
   const cell = activeCell.value
   if (cell) openCreate(cell.personId, cell.projectId)
@@ -194,7 +260,85 @@ function createFromCell(): void {
 function createFirstTask(): void {
   const personId = data.systemPerson?.id ?? data.activePeople[0]?.id
   const projectId = data.activeProjects[0]?.id
-  if (personId && projectId) openCreate(personId, projectId)
+  if (personId && projectId) openQuickCreate(personId, projectId)
+}
+
+/** 格子定位文案，用于拖拽后的提示。 */
+function cellLabel(personId: number, projectId: number): string {
+  const person = data.personMap.get(personId)
+  const project = data.projectMap.get(projectId)
+  const personName = person?.is_system ? '待分配' : (person?.name ?? '未知人员')
+  return `${personName} · ${project?.name ?? '未知项目'}`
+}
+
+/** 拖拽改归属：只改人员与项目，日期与状态保持原样。 */
+async function handleMoveTask(task: Task, personId: number, projectId: number): Promise<void> {
+  try {
+    await data.updateTask(task.id, {
+      ...toTaskInput(task),
+      person_id: personId,
+      project_id: projectId,
+    })
+    showMoveToast(task, personId, projectId)
+  } catch (cause) {
+    message.error(messageOfError(cause))
+  }
+}
+
+/** 拖拽成功后的 toast：5 秒内可撤销，撤销即把人员／项目改回去。 */
+function showMoveToast(task: Task, personId: number, projectId: number): void {
+  let toast: { destroy: () => void } | null = null
+  let undone = false
+
+  const undo = async (): Promise<void> => {
+    const current = data.tasks.find((item) => item.id === task.id)
+    if (!current) return
+    try {
+      await data.updateTask(task.id, {
+        ...toTaskInput(current),
+        person_id: task.person_id,
+        project_id: task.project_id,
+      })
+      message.success('已撤销移动')
+    } catch (cause) {
+      message.error(messageOfError(cause))
+    }
+  }
+
+  toast = message.success(
+    () =>
+      h('span', { class: 'undo-toast' }, [
+        h(
+          'span',
+          { class: 'undo-toast-text' },
+          `「${task.title}」已移到 ${cellLabel(personId, projectId)}`,
+        ),
+        h(
+          'button',
+          {
+            type: 'button',
+            class: 'undo-toast-action',
+            onClick: () => {
+              if (undone) return
+              undone = true
+              toast?.destroy()
+              void undo()
+            },
+          },
+          '撤销',
+        ),
+      ]),
+    { duration: 5000, keepAliveOnHover: true },
+  )
+}
+
+/** 点击格子里的状态点循环切换；写库失败时由 store 回滚并提示。 */
+async function handleCycleStatus(task: Task): Promise<void> {
+  try {
+    await data.cycleTaskStatus(task.id)
+  } catch (cause) {
+    message.error(messageOfError(cause))
+  }
 }
 
 /** 切到「全部」筛选。 */
@@ -319,11 +463,22 @@ async function handleReorder(kind: 'person' | 'project', ids: number[]): Promise
         :cells="cells"
         :selected="activeCell"
         @open-cell="openCell"
-        @create-task="openCreate"
+        @create-task="openQuickCreate"
         @edit-task="openEdit"
+        @cycle-status="handleCycleStatus"
+        @move-task="handleMoveTask"
         @reorder="handleReorder"
       />
     </template>
+
+    <quick-create-modal
+      v-model:open="quickOpen"
+      :person="quickPerson"
+      :project="quickProject"
+      :start-date="quickDefaults?.startDate ?? null"
+      :end-date="quickDefaults?.endDate ?? null"
+      @more="handleQuickMore"
+    />
 
     <cell-modal
       v-model:open="cellModalOpen"
@@ -340,6 +495,9 @@ async function handleReorder(kind: 'person' | 'project', ids: number[]): Promise
       :task="editingTask"
       :default-person-id="createDefaults?.personId"
       :default-project-id="createDefaults?.projectId"
+      :default-title="createDefaults?.title"
+      :default-start-date="createDefaults?.startDate"
+      :default-end-date="createDefaults?.endDate"
       @update:open="handleTaskModalOpen"
     />
   </div>

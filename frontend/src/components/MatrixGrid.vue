@@ -1,5 +1,6 @@
 <!-- 矩阵网格：行列渲染、表头吸附、空行／空列标记、行列拖拽排序。
-     行与列统一用 MatrixAxis 表示，转置只交换两者，不改任何数据。 -->
+     行与列统一用 MatrixAxis 表示，转置只交换两者，不改任何数据。
+     任务卡片本身也能拖动：拖到另一格即改人员／项目归属，拖回「待分配」即取消指派。 -->
 <script setup lang="ts">
 import { NIcon } from 'naive-ui'
 import { LockClosedOutline } from '@vicons/ionicons5'
@@ -25,19 +26,44 @@ const emit = defineEmits<{
   openCell: [personId: number, projectId: number]
   createTask: [personId: number, projectId: number]
   editTask: [task: Task]
+  cycleStatus: [task: Task]
+  moveTask: [task: Task, personId: number, projectId: number]
   reorder: [kind: MatrixAxisKind, ids: number[]]
 }>()
 
-// 尺寸与 docs/PAGES.md 一致：人员列 180px、格子 170px。
+// 尺寸与 docs/PAGES.md 一致：人员列 180px、格子 170px；
+// 「待分配」行／列为空时压缩，但仍留在网格里接住拖拽。
 const ROW_HEAD_WIDTH = 180
 const CELL_WIDTH = 170
+const ROW_HEIGHT = 120
+const HEADER_HEIGHT = 56
+const COMPACT_WIDTH = 140
+const COMPACT_HEIGHT = 48
 
 const scrollEl = ref<HTMLElement | null>(null)
 const matrixEl = ref<HTMLElement | null>(null)
 
-const gridStyle = computed(() => ({
-  gridTemplateColumns: `${ROW_HEAD_WIDTH}px repeat(${Math.max(props.cols.length, 1)}, ${CELL_WIDTH}px)`,
-}))
+const gridStyle = computed(() => {
+  const columns = props.cols.map((col) => `${col.compact ? COMPACT_WIDTH : CELL_WIDTH}px`)
+  const rows = props.rows.map((row) =>
+    row.compact ? `${COMPACT_HEIGHT}px` : `minmax(${ROW_HEIGHT}px, auto)`,
+  )
+  return {
+    gridTemplateColumns: `${ROW_HEAD_WIDTH}px ${
+      columns.length ? columns.join(' ') : `${CELL_WIDTH}px`
+    }`,
+    gridTemplateRows: [`${HEADER_HEIGHT}px`, ...rows].join(' '),
+  }
+})
+
+/** 当前所有格子里的任务索引，拖拽时按 id 取回任务对象。 */
+const taskById = computed(() => {
+  const index = new Map<number, Task>()
+  for (const list of props.cells.values()) {
+    for (const task of list) index.set(task.id, task)
+  }
+  return index
+})
 
 const axesLabel = computed(
   () => `${axisLabel(props.rows[0]?.kind)} × ${axisLabel(props.cols[0]?.kind)}`,
@@ -85,9 +111,23 @@ function createInCell(row: MatrixAxis, col: MatrixAxis): void {
   emit('createTask', coord.personId, coord.projectId)
 }
 
-/** 编辑某条任务。 */
+/** 编辑某条任务；刚拖拽结束时吞掉尾随的 click，避免误开弹窗。 */
 function editTask(task: Task): void {
+  if (suppressTaskClick) return
   emit('editTask', task)
+}
+
+/** 点击格子里的状态点循环切换状态。 */
+function cycleTask(task: Task): void {
+  emit('cycleStatus', task)
+}
+
+/** 该格是否为任务拖拽的落点。 */
+function cellIsDropTarget(row: MatrixAxis, col: MatrixAxis): boolean {
+  const target = taskDrag.value?.target
+  if (!target) return false
+  const coord = coordOf(row, col)
+  return target.personId === coord.personId && target.projectId === coord.projectId
 }
 
 // 拖拽排序：拖动行头／列头时整行／整列浮起，落点处撑开一段插入间隙。
@@ -522,7 +562,243 @@ function resetDrag(): void {
   stopListening()
 }
 
-onBeforeUnmount(resetDrag)
+onBeforeUnmount(() => {
+  resetDrag()
+  resetTaskDrag()
+})
+
+// 任务拖拽：按住任务卡片移动超过阈值后浮起，落点所在格即新的归属。
+// 和行列拖拽一样用 Pointer Events 自绘，才能同时控制浮层、落点高亮与边缘滚动。
+interface PendingTaskDrag {
+  task: Task
+  pointerId: number
+  startX: number
+  startY: number
+  chip: HTMLElement
+}
+
+interface TaskDrag {
+  task: Task
+  pointerId: number
+  /** 指针在浮起卡片内的偏移，保证拖动时手感不跳。 */
+  offsetX: number
+  offsetY: number
+  ghost: HTMLElement
+  sourceEl: HTMLElement
+  /** 落点格子；null 表示松手会取消这次拖拽。 */
+  target: MatrixCellKey | null
+}
+
+const taskDrag = ref<TaskDrag | null>(null)
+let pendingTask: PendingTaskDrag | null = null
+let taskScrollRaf = 0
+/** 拖拽结束后浏览器还会补一个 click，用它吞掉，避免顺手打开任务弹窗。 */
+let suppressTaskClick = false
+
+/** 按下任务卡片：先只记候选，移动超过阈值才算拖拽。 */
+function onTaskPointerDown(event: PointerEvent): void {
+  if (event.button !== 0 || !event.isPrimary) return
+  if (pending || drag.value || pendingTask || taskDrag.value) return
+
+  const target = event.target as HTMLElement | null
+  // 状态点是独立操作，不参与拖拽。
+  if (target?.closest('.chip-status')) return
+  const chip = target?.closest<HTMLElement>('.task-chip')
+  if (!chip) return
+
+  const task = taskById.value.get(Number(chip.dataset.taskId))
+  if (!task) return
+
+  pendingTask = {
+    task,
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    chip,
+  }
+  pointer.x = event.clientX
+  pointer.y = event.clientY
+  window.addEventListener('pointermove', onTaskPointerMove)
+  window.addEventListener('pointerup', onTaskPointerUp)
+  window.addEventListener('pointercancel', onTaskPointerCancel)
+  window.addEventListener('keydown', onTaskKeyDown)
+  window.addEventListener('blur', onTaskWindowBlur)
+}
+
+function onTaskPointerMove(event: PointerEvent): void {
+  if (pendingTask && event.pointerId !== pendingTask.pointerId) return
+  if (taskDrag.value && event.pointerId !== taskDrag.value.pointerId) return
+  pointer.x = event.clientX
+  pointer.y = event.clientY
+
+  if (pendingTask) {
+    const distance = Math.hypot(
+      event.clientX - pendingTask.startX,
+      event.clientY - pendingTask.startY,
+    )
+    if (distance < DRAG_THRESHOLD) return
+    beginTaskDrag(pendingTask, event.clientX, event.clientY)
+    pendingTask = null
+  }
+
+  const state = taskDrag.value
+  if (!state) return
+  state.ghost.style.transform = `translate3d(${event.clientX - state.offsetX}px, ${
+    event.clientY - state.offsetY
+  }px, 0)`
+  updateTaskTarget()
+}
+
+/** 开始拖任务：克隆卡片做浮层，原卡片淡出，并启动边缘滚动。 */
+function beginTaskDrag(start: PendingTaskDrag, pointerX: number, pointerY: number): void {
+  const rect = start.chip.getBoundingClientRect()
+  const ghost = start.chip.cloneNode(true) as HTMLElement
+  ghost.classList.add('task-ghost')
+  ghost.style.width = `${rect.width}px`
+  ghost.style.height = `${rect.height}px`
+  ghost.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`
+  document.body.appendChild(ghost)
+
+  const state: TaskDrag = {
+    task: start.task,
+    pointerId: start.pointerId,
+    offsetX: pointerX - rect.left,
+    offsetY: pointerY - rect.top,
+    ghost,
+    sourceEl: start.chip,
+    target: null,
+  }
+  taskDrag.value = state
+  start.chip.style.opacity = '0.28'
+
+  window.requestAnimationFrame(() => ghost.classList.add('is-lifted'))
+  document.body.classList.add('is-task-dragging')
+  updateTaskTarget()
+  startTaskAutoScroll()
+}
+
+/** 按指针位置找落点格子，再还原成「人员 × 项目」，转置时同样成立。 */
+function updateTaskTarget(): void {
+  const state = taskDrag.value
+  if (!state) return
+
+  const element = document.elementFromPoint(pointer.x, pointer.y) as HTMLElement | null
+  const cell = element?.closest<HTMLElement>('.matrix-cell')
+  if (!cell) {
+    state.target = null
+    return
+  }
+
+  const row = props.rows.find((item) => item.id === Number(cell.dataset.rowId))
+  const col = props.cols.find((item) => item.id === Number(cell.dataset.colId))
+  state.target = row && col ? coordOf(row, col) : null
+}
+
+function onTaskPointerUp(event: PointerEvent): void {
+  if (taskDrag.value && event.pointerId !== taskDrag.value.pointerId) return
+  if (pendingTask && event.pointerId !== pendingTask.pointerId) return
+
+  const state = taskDrag.value
+  if (!state) {
+    resetTaskDrag()
+    return
+  }
+
+  const target = state.target
+  const task = state.task
+  const moved =
+    target !== null &&
+    (target.personId !== task.person_id || target.projectId !== task.project_id)
+  resetTaskDrag()
+  if (!moved || !target) return
+
+  suppressTaskClick = true
+  window.setTimeout(() => {
+    suppressTaskClick = false
+  }, 0)
+  emit('moveTask', task, target.personId, target.projectId)
+}
+
+function onTaskPointerCancel(): void {
+  resetTaskDrag()
+}
+
+function onTaskKeyDown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') resetTaskDrag()
+}
+
+function onTaskWindowBlur(): void {
+  resetTaskDrag()
+}
+
+/** 拖到视口边缘时自动滚动，才能把任务放到屏幕外的格子里。 */
+function startTaskAutoScroll(): void {
+  if (taskScrollRaf) return
+  taskScrollRaf = window.requestAnimationFrame(stepTaskAutoScroll)
+}
+
+function stepTaskAutoScroll(): void {
+  taskScrollRaf = 0
+  const scroller = scrollEl.value
+  if (!scroller || !taskDrag.value) return
+
+  const rect = scroller.getBoundingClientRect()
+  const insideX = pointer.x >= rect.left && pointer.x <= rect.right
+  const insideY = pointer.y >= rect.top && pointer.y <= rect.bottom
+  let dx = 0
+  let dy = 0
+
+  if (insideY) {
+    if (pointer.x < rect.left + EDGE_PX) {
+      dx = -edgeSpeed(rect.left + EDGE_PX - pointer.x)
+    } else if (pointer.x > rect.right - EDGE_PX) {
+      dx = edgeSpeed(pointer.x - (rect.right - EDGE_PX))
+    }
+  }
+  if (insideX) {
+    if (pointer.y < rect.top + EDGE_PX) {
+      dy = -edgeSpeed(rect.top + EDGE_PX - pointer.y)
+    } else if (pointer.y > rect.bottom - EDGE_PX) {
+      dy = edgeSpeed(pointer.y - (rect.bottom - EDGE_PX))
+    }
+  }
+
+  if (dx || dy) {
+    scroller.scrollLeft += dx
+    scroller.scrollTop += dy
+    updateTaskTarget()
+  }
+  taskScrollRaf = window.requestAnimationFrame(stepTaskAutoScroll)
+}
+
+function stopTaskListening(): void {
+  window.removeEventListener('pointermove', onTaskPointerMove)
+  window.removeEventListener('pointerup', onTaskPointerUp)
+  window.removeEventListener('pointercancel', onTaskPointerCancel)
+  window.removeEventListener('keydown', onTaskKeyDown)
+  window.removeEventListener('blur', onTaskWindowBlur)
+}
+
+/** 结束任务拖拽：原卡片恢复、浮层淡出、清掉落点高亮。 */
+function resetTaskDrag(): void {
+  const state = taskDrag.value
+  pendingTask = null
+  taskDrag.value = null
+
+  if (state) {
+    state.sourceEl.style.opacity = ''
+    const ghost = state.ghost
+    ghost.classList.remove('is-lifted')
+    ghost.classList.add('is-dropping')
+    window.setTimeout(() => ghost.remove(), 160)
+  }
+  if (taskScrollRaf) {
+    window.cancelAnimationFrame(taskScrollRaf)
+    taskScrollRaf = 0
+  }
+  document.body.classList.remove('is-task-dragging')
+  stopTaskListening()
+}
 
 /** 读取当前滚动位置，转置后按交换后的方向恢复。 */
 function readScroll(): { top: number; left: number } {
@@ -542,7 +818,7 @@ defineExpose({ readScroll, applyScroll })
 
 <template>
   <div ref="scrollEl" class="matrix-scroll">
-    <div ref="matrixEl" class="matrix" :style="gridStyle">
+    <div ref="matrixEl" class="matrix" :style="gridStyle" @pointerdown="onTaskPointerDown">
       <div class="corner">
         <span class="corner-label">{{ axesLabel }}</span>
       </div>
@@ -564,13 +840,24 @@ defineExpose({ readScroll, applyScroll })
         }"
         :data-col-id="col.id"
         :style="colStyle(colIndex)"
-        :title="col.isSystem ? '系统人员固定在第一列' : '拖动整列调整顺序'"
+        :title="
+          col.isSystem
+            ? `系统人员固定在第一列，当前 ${col.count} 条未指派任务`
+            : '拖动整列调整顺序'
+        "
         @pointerdown="onHeadPointerDown($event, 'col', col, colIndex)"
       >
-        <ColorDot :color="col.color" :size="8" />
+        <color-dot :color="col.color" :size="8" />
         <span class="head-name">{{ col.name }}</span>
         <n-icon v-if="col.isSystem" :component="LockClosedOutline" class="head-lock" />
-        <span v-if="col.empty" class="empty-tag">无任务</span>
+        <span
+          v-if="col.isSystem"
+          class="pending-count"
+          :title="`${col.count} 条未指派任务`"
+        >
+          {{ col.count }} 条
+        </span>
+        <span v-else-if="col.empty" class="empty-tag">无任务</span>
       </div>
 
       <template v-for="(row, rowIndex) in rows" :key="`row-${row.id}`">
@@ -582,13 +869,24 @@ defineExpose({ readScroll, applyScroll })
           }"
           :data-row-id="row.id"
           :style="rowStyle(rowIndex)"
-          :title="row.isSystem ? '系统人员固定在第一行' : '拖动整行调整顺序'"
+          :title="
+            row.isSystem
+              ? `系统人员固定在第一行，当前 ${row.count} 条未指派任务`
+              : '拖动整行调整顺序'
+          "
           @pointerdown="onHeadPointerDown($event, 'row', row, rowIndex)"
         >
           <ColorDot :color="row.color" :size="8" />
           <span class="head-name">{{ row.name }}</span>
           <n-icon v-if="row.isSystem" :component="LockClosedOutline" class="head-lock" />
-          <span v-if="row.empty" class="empty-tag">无任务</span>
+          <span
+            v-if="row.isSystem"
+            class="pending-count"
+            :title="`${row.count} 条未指派任务`"
+          >
+            {{ row.count }} 条
+          </span>
+          <span v-else-if="row.empty" class="empty-tag">无任务</span>
         </div>
 
         <matrix-cell
@@ -601,9 +899,12 @@ defineExpose({ readScroll, applyScroll })
           :empty-row="row.empty"
           :empty-col="col.empty"
           :selected="cellIsSelected(row, col)"
+          :compact="row.compact || col.compact"
+          :drop-target="cellIsDropTarget(row, col)"
           @open="openCell(row, col)"
           @create="createInCell(row, col)"
           @edit="editTask"
+          @cycle="cycleTask"
         />
       </template>
     </div>
@@ -759,6 +1060,18 @@ defineExpose({ readScroll, applyScroll })
   white-space: nowrap;
 }
 
+.pending-count {
+  flex: none;
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.14);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 @media (max-width: 860px) {
   .matrix-scroll {
     max-height: calc(100vh - 300px);
@@ -808,6 +1121,40 @@ defineExpose({ readScroll, applyScroll })
 
 body.is-axis-dragging,
 body.is-axis-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+/* 任务卡片的拖拽浮层。位置由内联 transform 控制，这里只管外观与淡入淡出。 */
+.task-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 75;
+  margin: 0;
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow:
+    0 12px 28px rgba(15, 23, 42, 0.18),
+    0 2px 8px rgba(15, 23, 42, 0.08);
+  opacity: 0;
+  outline: 1px solid var(--border-strong);
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  will-change: transform, opacity;
+}
+
+.task-ghost.is-lifted {
+  opacity: 1;
+}
+
+.task-ghost.is-dropping {
+  opacity: 0;
+  transition-duration: 0.1s;
+}
+
+body.is-task-dragging,
+body.is-task-dragging * {
   cursor: grabbing !important;
   user-select: none !important;
 }

@@ -14,6 +14,9 @@ const props = defineProps<{
   task: Task | null
   defaultPersonId?: number
   defaultProjectId?: number
+  defaultTitle?: string
+  defaultStartDate?: string | null
+  defaultEndDate?: string | null
 }>()
 
 const emit = defineEmits<{ 'update:open': [value: boolean] }>()
@@ -136,12 +139,18 @@ async function save(): Promise<void> {
     <div class="modal-body">
       <TaskForm
         ref="formRef"
-        :key="task?.id ?? `new-${defaultPersonId ?? 0}-${defaultProjectId ?? 0}`"
+        :key="
+          task?.id ??
+          `new-${defaultPersonId ?? 0}-${defaultProjectId ?? 0}-${defaultTitle ?? ''}-${defaultStartDate ?? ''}-${defaultEndDate ?? ''}`
+        "
         :task="task"
         :people="personOptions"
         :projects="projectOptions"
         :default-person-id="defaultPersonId ?? data.systemPerson?.id ?? 0"
         :default-project-id="defaultProjectId ?? 0"
+        :default-title="defaultTitle ?? ''"
+        :default-start-date="defaultStartDate ?? null"
+        :default-end-date="defaultEndDate ?? null"
         :server-errors="serverErrors"
         :disabled="saving"
         @dirty="dirty = $event"

@@ -1,4 +1,5 @@
-<!-- 矩阵单格：最多展示 3 条任务，超出显示「+N」；空白处点击打开格子弹窗。 -->
+<!-- 矩阵单格：最多展示 3 条任务，超出显示「+N」；空白处点击打开格子弹窗。
+     hover 右上角的「+」是快速新建入口，只填标题即可落库。 -->
 <script setup lang="ts">
 import { NIcon } from 'naive-ui'
 import { AddOutline } from '@vicons/ionicons5'
@@ -14,14 +15,26 @@ const props = withDefaults(
     emptyRow?: boolean
     emptyCol?: boolean
     selected?: boolean
+    /** 「待分配」行没有任务时压缩成窄行，但仍要能接住拖拽。 */
+    compact?: boolean
+    /** 任务拖拽经过时的落点高亮。 */
+    dropTarget?: boolean
   }>(),
-  { max: 3, emptyRow: false, emptyCol: false, selected: false },
+  {
+    max: 3,
+    emptyRow: false,
+    emptyCol: false,
+    selected: false,
+    compact: false,
+    dropTarget: false,
+  },
 )
 
 const emit = defineEmits<{
   open: []
   create: []
   edit: [task: Task]
+  cycle: [task: Task]
 }>()
 
 const visibleTasks = computed(() => props.tasks.slice(0, props.max))
@@ -31,10 +44,16 @@ const hiddenCount = computed(() => Math.max(0, props.tasks.length - props.max))
 <template>
   <div
     class="matrix-cell"
-    :class="{ 'is-empty-row': emptyRow, 'is-empty-col': emptyCol, 'is-selected': selected }"
+    :class="{
+      'is-empty-row': emptyRow && !compact,
+      'is-empty-col': emptyCol,
+      'is-selected': selected,
+      'is-compact': compact,
+      'is-drop-target': dropTarget,
+    }"
     @click="emit('open')"
   >
-    <button type="button" class="cell-add" title="在此格新建任务" @click.stop="emit('create')">
+    <button type="button" class="cell-add" title="快速新建任务" @click.stop="emit('create')">
       <n-icon :component="AddOutline" :size="14" />
     </button>
 
@@ -44,6 +63,7 @@ const hiddenCount = computed(() => Math.max(0, props.tasks.length - props.max))
         :key="task.id"
         :task="task"
         @open="emit('edit', $event)"
+        @cycle="emit('cycle', $event)"
       />
       <button
         v-if="hiddenCount > 0"
@@ -54,7 +74,8 @@ const hiddenCount = computed(() => Math.max(0, props.tasks.length - props.max))
       >
         +{{ hiddenCount }}
       </button>
-      <span v-if="!tasks.length" class="cell-none">—</span>
+      <span v-if="compact && !tasks.length" class="cell-drop-hint">拖入</span>
+      <span v-else-if="!tasks.length" class="cell-none">—</span>
     </div>
   </div>
 </template>
@@ -89,6 +110,26 @@ const hiddenCount = computed(() => Math.max(0, props.tasks.length - props.max))
   box-shadow: inset 0 0 0 2px var(--primary);
 }
 
+/* 「待分配」为空时压缩成窄行：内容居中，留一条「拖入」提示继续当落点。 */
+.matrix-cell.is-compact {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+}
+
+.matrix-cell.is-compact .cell-stack {
+  width: 100%;
+}
+
+.matrix-cell.is-drop-target {
+  background: var(--primary-soft);
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.matrix-cell.is-compact.is-drop-target {
+  background: var(--primary-soft);
+}
+
 .cell-stack {
   display: flex;
   flex-direction: column;
@@ -101,6 +142,14 @@ const hiddenCount = computed(() => Math.max(0, props.tasks.length - props.max))
   padding: 2px 6px;
   color: var(--text-faint);
   font-size: 12px;
+}
+
+.cell-drop-hint {
+  display: block;
+  padding: 2px 6px;
+  color: var(--text-faint);
+  font-size: 11px;
+  text-align: center;
 }
 
 .cell-more {
@@ -124,6 +173,7 @@ const hiddenCount = computed(() => Math.max(0, props.tasks.length - props.max))
   position: absolute;
   top: 4px;
   right: 4px;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -149,5 +199,10 @@ const hiddenCount = computed(() => Math.max(0, props.tasks.length - props.max))
 
 .cell-add:hover {
   color: var(--primary);
+}
+
+.matrix-cell.is-compact .cell-add {
+  top: 2px;
+  right: 2px;
 }
 </style>
