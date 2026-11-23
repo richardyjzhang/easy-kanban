@@ -34,7 +34,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   /** 修改密码；服务端会让旧 token 失效并换发新 token。 */
   async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
-    const result = await api.changePassword(oldPassword, newPassword)
+    // 摘要要带用户名，用登录时记住的那一个。
+    const result = await api.changePassword(username.value, oldPassword, newPassword)
     applyToken(result.token)
   }
 

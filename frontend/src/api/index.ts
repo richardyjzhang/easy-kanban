@@ -1,5 +1,6 @@
 // 后端接口清单：每个函数对应 docs/DATA-API.md 里的一个端点。
 
+import { credentialDigest } from '../utils/credential'
 import { http } from './client'
 import type {
   AppState,
@@ -15,16 +16,23 @@ import type {
 } from '../types'
 
 export const api = {
-  /** 登录并取得 token。 */
+  /** 登录并取得 token；password 字段只传凭据摘要，明文密码不出浏览器。 */
   login(username: string, password: string): Promise<LoginResponse> {
-    return http.post<LoginResponse>('/auth/login', { username, password })
+    return http.post<LoginResponse>('/auth/login', {
+      username,
+      password: credentialDigest(username, password),
+    })
   },
 
-  /** 修改密码，成功时返回续签后的新 token。 */
-  changePassword(oldPassword: string, newPassword: string): Promise<LoginResponse> {
+  /** 修改密码，成功时返回续签后的新 token；新旧密码同样只传凭据摘要。 */
+  changePassword(
+    username: string,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<LoginResponse> {
     return http.post<LoginResponse>('/auth/password', {
-      old_password: oldPassword,
-      new_password: newPassword,
+      old_password: credentialDigest(username, oldPassword),
+      new_password: credentialDigest(username, newPassword),
     })
   },
 

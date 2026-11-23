@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
@@ -294,8 +295,10 @@ def _ensure_account(conn: sqlite3.Connection, config: dict) -> None:
         # bcrypt 只处理前 72 字节，超出部分会被静默忽略，所以直接拒绝。
         raise RuntimeError("EASY_KANBAN_PASSWORD 过长（bcrypt 最多 72 字节）。")
 
+    # 前端登录传的是 sha256(username:password)，初始账号按同样格式落库。
+    digest = hashlib.sha256(f"{username}:{password}".encode("utf-8")).hexdigest()
     conn.execute(
         "INSERT INTO users (id, username, password_hash, token_version, created_at) "
         "VALUES (1, ?, ?, 0, ?)",
-        (username, hash_password(password), now_ts()),
+        (username, hash_password(digest), now_ts()),
     )
