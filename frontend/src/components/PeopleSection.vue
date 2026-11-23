@@ -121,7 +121,7 @@ async function restore(person: Person): Promise<void> {
     <header class="section-head">
       <div>
         <p class="section-sub">
-          矩阵的行。内置的「待分配」不在这里显示；归档后人员从矩阵收起，历史任务仍保留。
+          矩阵的行。归档后人员从矩阵收起，历史任务仍保留。
         </p>
       </div>
       <n-button type="primary" @click="openCreate">
