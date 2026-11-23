@@ -80,9 +80,7 @@ function logout(): void {
   display: flex;
   align-items: center;
   gap: 32px;
-  max-width: 1280px;
   height: 100%;
-  margin: 0 auto;
   padding: 0 32px;
 }
 
@@ -143,8 +141,6 @@ function logout(): void {
 }
 
 .page {
-  max-width: 1280px;
-  margin: 0 auto;
   padding: 28px 32px 64px;
 }
 
