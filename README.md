@@ -60,7 +60,7 @@ cd easy-kanban
 | 文档 | 内容 |
 |---|---|
 | [PRD](docs/PRD.md) | 定位、场景、功能需求、业务规则 |
-| [PAGES](docs/PAGES.md) | 路由、页面、抽屉、组件 |
+| [PAGES](docs/PAGES.md) | 路由、页面、弹窗、组件 |
 | [DATA-API](docs/DATA-API.md) | 表结构、接口契约 |
 | [DEPLOY](docs/DEPLOY.md) | 部署与运维 |
 

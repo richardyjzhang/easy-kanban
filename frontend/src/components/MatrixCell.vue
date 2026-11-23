@@ -1,4 +1,4 @@
-<!-- 矩阵单格：最多展示 3 条任务，超出显示「+N」；空白处点击打开格子抽屉。 -->
+<!-- 矩阵单格：最多展示 3 条任务，超出显示「+N」；空白处点击打开格子弹窗。 -->
 <script setup lang="ts">
 import { NIcon } from 'naive-ui'
 import { AddOutline } from '@vicons/ionicons5'

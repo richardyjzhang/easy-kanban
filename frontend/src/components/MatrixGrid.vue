@@ -72,7 +72,7 @@ function cellIsSelected(row: MatrixAxis, col: MatrixAxis): boolean {
   )
 }
 
-/** 打开格子抽屉。 */
+/** 打开格子弹窗。 */
 function openCell(row: MatrixAxis, col: MatrixAxis): void {
   const coord = coordOf(row, col)
   emit('openCell', coord.personId, coord.projectId)

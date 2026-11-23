@@ -1,6 +1,8 @@
-<!-- 格子抽屉（D1）：该人员在该项目下的全部任务 + 新建入口。 -->
+<!-- 格子弹窗（D1）：该人员在该项目下的全部任务 + 新建入口。
+     居中 Modal 而非右侧抽屉，宽度随内容在 880–1200px 间自适应，
+     任务表因此可以保留人员／项目列与正常列宽。 -->
 <script setup lang="ts">
-import { NButton, NDrawer, NDrawerContent, NEmpty, NIcon, NSpace } from 'naive-ui'
+import { NButton, NIcon, NModal, NSpace } from 'naive-ui'
 import { AddOutline } from '@vicons/ionicons5'
 import { computed, reactive } from 'vue'
 
@@ -17,7 +19,7 @@ const props = withDefaults(
     person: Person | null
     project: Project | null
     tasks: Task[]
-    /** 当前是否处于日期筛选中，用于解释格子与抽屉的条数差异。 */
+    /** 当前是否处于日期筛选中，用于解释格子与弹窗的条数差异。 */
     filtered?: boolean
   }>(),
   { filtered: false },
@@ -46,12 +48,19 @@ const subtitle = computed(() => {
   return `共 ${props.tasks.length} 条任务，${prefix}`
 })
 
-/** 关闭抽屉。 */
+// 内容自适应：任务少时收窄，列多时铺开；880px 是六列的最小可用宽度，窄屏退回 94vw。
+const modalStyle = computed(() => ({
+  width: 'fit-content',
+  minWidth: 'min(880px, 94vw)',
+  maxWidth: 'min(1200px, 94vw)',
+}))
+
+/** 关闭弹窗。 */
 function close(): void {
   emit('update:open', false)
 }
 
-/** 处理抽屉自身的关闭事件（遮罩、ESC、关闭按钮）。 */
+/** 处理弹窗自身的关闭事件（遮罩、ESC、关闭按钮）。 */
 function handleShow(value: boolean): void {
   if (!value) close()
 }
@@ -103,61 +112,74 @@ function askDelete(task: Task): void {
 </script>
 
 <template>
-  <n-drawer :show="open" :width="480" placement="right" @update:show="handleShow">
-    <n-drawer-content :native-scrollbar="false" closable>
-      <template #header>
-        <div class="drawer-head">
-          <h2>{{ title }}</h2>
-          <p>{{ subtitle }}</p>
-        </div>
-      </template>
+  <n-modal
+    :show="open"
+    preset="card"
+    class="cell-modal"
+    :bordered="false"
+    :style="modalStyle"
+    closable
+    @update:show="handleShow"
+  >
+    <template #header>
+      <div class="modal-head">
+        <h2>{{ title }}</h2>
+        <p>{{ subtitle }}</p>
+      </div>
+    </template>
 
+    <div class="modal-body">
       <task-list-panel
         v-if="tasks.length"
         :tasks="tasks"
         :people="data.people"
         :projects="data.projects"
         :busy-ids="busyIds"
-        :show-context="false"
         @edit="emit('edit', $event)"
         @delete="askDelete"
         @cycle="cycleStatus"
       />
-      <n-empty v-else description="还没有任务">
-        <template #extra>
-          <n-button type="primary" :disabled="!project" @click="emit('create')">
-            <template #icon>
-              <n-icon :component="AddOutline" />
-            </template>
-            新建任务
-          </n-button>
-        </template>
-      </n-empty>
+      <p v-else class="modal-empty">点下方「新建任务」添加第一条。</p>
+    </div>
 
-      <template #footer>
-        <n-space justify="end">
-          <n-button type="primary" :disabled="!project" @click="emit('create')">
-            <template #icon>
-              <n-icon :component="AddOutline" />
-            </template>
-            新建任务
-          </n-button>
-        </n-space>
-      </template>
-    </n-drawer-content>
-  </n-drawer>
+    <template #footer>
+      <n-space justify="end">
+        <n-button @click="close">关闭</n-button>
+        <n-button type="primary" :disabled="!project" @click="emit('create')">
+          <template #icon>
+            <n-icon :component="AddOutline" />
+          </template>
+          新建任务
+        </n-button>
+      </n-space>
+    </template>
+  </n-modal>
 </template>
 
 <style scoped>
-.drawer-head h2 {
+.modal-head h2 {
   font-size: 17px;
   font-weight: 650;
 }
 
-.drawer-head p {
+.modal-head p {
   margin-top: 4px;
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 400;
+}
+
+/* 任务多时弹窗内部滚动，避免整页被撑高。 */
+.modal-body {
+  max-height: 60vh;
+  overflow: auto;
+}
+
+/* 空格子只给一行提示，点击入口统一放在 footer，避免中间多出一颗重复的按钮。 */
+.modal-empty {
+  padding: 24px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
 }
 </style>

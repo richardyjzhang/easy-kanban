@@ -1,6 +1,6 @@
-<!-- 任务右侧抽屉：新建/编辑任务，关闭前检查未保存修改。 -->
+<!-- 任务弹窗（D2）：新建/编辑任务，关闭前检查未保存修改。 -->
 <script setup lang="ts">
-import { NButton, NDrawer, NDrawerContent, NSpace } from 'naive-ui'
+import { NButton, NModal, NSpace } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 
 import TaskForm from './TaskForm.vue'
@@ -58,7 +58,7 @@ watch(
   },
 )
 
-/** 关闭抽屉。 */
+/** 关闭弹窗。 */
 function close(): void {
   emit('update:open', false)
 }
@@ -81,7 +81,7 @@ function requestClose(): void {
   })
 }
 
-/** 处理抽屉自身的关闭事件（遮罩、ESC、关闭按钮）。 */
+/** 处理弹窗自身的关闭事件（遮罩、ESC、关闭按钮）。 */
 function handleShow(value: boolean): void {
   if (!value) requestClose()
 }
@@ -116,21 +116,24 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <n-drawer
+  <n-modal
     :show="open"
-    :width="480"
-    placement="right"
+    preset="card"
+    class="task-modal"
+    :bordered="false"
+    :style="{ width: 'min(560px, 94vw)' }"
     :mask-closable="!saving"
+    closable
     @update:show="handleShow"
   >
-    <n-drawer-content :native-scrollbar="false" closable>
-      <template #header>
-        <div class="drawer-head">
-          <h2>{{ title }}</h2>
-          <p>{{ task ? '修改后立即生效，没有额外的保存副本。' : '先记下来，其余字段之后再补。' }}</p>
-        </div>
-      </template>
+    <template #header>
+      <div class="modal-head">
+        <h2>{{ title }}</h2>
+        <p>{{ task ? '修改后立即生效，没有额外的保存副本。' : '先记下来，其余字段之后再补。' }}</p>
+      </div>
+    </template>
 
+    <div class="modal-body">
       <TaskForm
         ref="formRef"
         :key="task?.id ?? `new-${defaultPersonId ?? 0}-${defaultProjectId ?? 0}`"
@@ -143,34 +146,40 @@ async function save(): Promise<void> {
         :disabled="saving"
         @dirty="dirty = $event"
       />
+    </div>
 
-      <template #footer>
-        <n-space justify="end">
-          <n-button :disabled="saving" @click="requestClose">取消</n-button>
-          <n-button
-            type="primary"
-            :loading="saving"
-            :disabled="projectOptions.length === 0"
-            @click="save"
-          >
-            保存
-          </n-button>
-        </n-space>
-      </template>
-    </n-drawer-content>
-  </n-drawer>
+    <template #footer>
+      <n-space justify="end">
+        <n-button :disabled="saving" @click="requestClose">取消</n-button>
+        <n-button
+          type="primary"
+          :loading="saving"
+          :disabled="projectOptions.length === 0"
+          @click="save"
+        >
+          保存
+        </n-button>
+      </n-space>
+    </template>
+  </n-modal>
 </template>
 
 <style scoped>
-.drawer-head h2 {
+.modal-head h2 {
   font-size: 17px;
   font-weight: 650;
 }
 
-.drawer-head p {
+.modal-head p {
   margin-top: 4px;
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 400;
+}
+
+/* 窄屏 / 矮窗口时表单在弹窗内部滚动，避免底部按钮被挤出视口。 */
+.modal-body {
+  max-height: 64vh;
+  overflow: auto;
 }
 </style>

@@ -6,10 +6,10 @@ import { AddOutline, RefreshOutline, SwapHorizontalOutline } from '@vicons/ionic
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import CellDrawer from '../components/CellDrawer.vue'
+import CellModal from '../components/CellModal.vue'
 import FilterBar from '../components/FilterBar.vue'
 import MatrixGrid from '../components/MatrixGrid.vue'
-import TaskDrawer from '../components/TaskDrawer.vue'
+import TaskModal from '../components/TaskModal.vue'
 import { messageOfError } from '../api/client'
 import { message } from '../feedback'
 import { useDataStore } from '../stores/data'
@@ -29,9 +29,11 @@ const gridRef = ref<InstanceType<typeof MatrixGrid> | null>(null)
 
 // 当前打开的格子；始终以人员 × 项目表示，转置不影响它。
 const activeCell = ref<MatrixCellKey | null>(null)
-const cellDrawerOpen = ref(false)
+const cellModalOpen = ref(false)
 
-const taskDrawerOpen = ref(false)
+const taskModalOpen = ref(false)
+// 从格子弹窗点「编辑／新建」时收起格子，任务弹窗关闭后再回到那个格子。
+const reopenCell = ref(false)
 const editingTask = ref<Task | null>(null)
 const createDefaults = ref<{ personId: number; projectId: number } | null>(null)
 
@@ -112,26 +114,31 @@ const summary = computed(() => {
   return `${realPeople.value.length} 人 × ${data.activeProjects.length} 个项目 · ${scope} · ${matrixTasks.value.length} 条任务`
 })
 
-/** 矩阵没有内容时的文案与操作。 */
+/** 矩阵没有任务时的顶部提示文案与操作。 */
 const emptyState = computed<{ description: string; action: 'create' | 'show-all' | null }>(() => {
-  if (!data.tasks.length) return { description: '矩阵里还没有任务', action: 'create' }
-  if (filter.value.preset !== 'all') {
-    return { description: `当前筛选（${formatRangeLabel(range.value)}）下没有任务`, action: 'show-all' }
+  if (!data.tasks.length) {
+    return { description: '矩阵里还没有任务，点任意格子的「+」即可在对应人员与项目下新建', action: 'create' }
   }
-  return { description: '矩阵里没有可展示的任务', action: null }
+  if (filter.value.preset !== 'all') {
+    return {
+      description: `当前筛选（${formatRangeLabel(range.value)}）下没有任务，可查看全部`,
+      action: 'show-all',
+    }
+  }
+  return { description: '矩阵里没有可展示的任务（现有任务都在已归档的人员或项目下）', action: null }
 })
 
-/** 格子抽屉里的人员对象。 */
+/** 格子弹窗里的人员对象。 */
 const activePerson = computed(() =>
   activeCell.value ? (data.personMap.get(activeCell.value.personId) ?? null) : null,
 )
 
-/** 格子抽屉里的项目对象。 */
+/** 格子弹窗里的项目对象。 */
 const activeProject = computed(() =>
   activeCell.value ? (data.projectMap.get(activeCell.value.projectId) ?? null) : null,
 )
 
-// 约定：抽屉展示该格的全部任务，不受日期筛选影响；格子里的「+N」只统计筛选结果。
+// 约定：弹窗展示该格的全部任务，不受日期筛选影响；格子里的「+N」只统计筛选结果。
 const activeCellTasks = computed(() => {
   const cell = activeCell.value
   if (!cell) return []
@@ -145,23 +152,39 @@ const activeCellTasks = computed(() => {
 /** 打开某个格子。 */
 function openCell(personId: number, projectId: number): void {
   activeCell.value = { personId, projectId }
-  cellDrawerOpen.value = true
+  cellModalOpen.value = true
 }
 
 /** 在某个格子新建任务。 */
 function openCreate(personId: number, projectId: number): void {
   editingTask.value = null
   createDefaults.value = { personId, projectId }
-  taskDrawerOpen.value = true
+  openTaskModal()
 }
 
 /** 编辑任务。 */
 function openEdit(task: Task): void {
   editingTask.value = task
-  taskDrawerOpen.value = true
+  openTaskModal()
 }
 
-/** 从格子抽屉底部的新建入口进入。 */
+/** 打开任务弹窗：两个居中弹窗不叠着显示，先收起格子弹窗并记下是否要回来。 */
+function openTaskModal(): void {
+  reopenCell.value = cellModalOpen.value
+  cellModalOpen.value = false
+  taskModalOpen.value = true
+}
+
+/** 任务弹窗关闭后，若当初是从格子弹窗进来的就回到那个格子。 */
+function handleTaskModalOpen(value: boolean): void {
+  taskModalOpen.value = value
+  if (!value && reopenCell.value && activeCell.value) {
+    reopenCell.value = false
+    cellModalOpen.value = true
+  }
+}
+
+/** 从格子弹窗底部的新建入口进入。 */
 function createFromCell(): void {
   const cell = activeCell.value
   if (cell) openCreate(cell.personId, cell.projectId)
@@ -268,36 +291,42 @@ async function handleReorder(kind: 'person' | 'project', ids: number[]): Promise
       </n-empty>
     </n-card>
 
-    <n-card v-else-if="!matrixTasks.length" :bordered="false">
-      <n-empty :description="emptyState.description">
-        <template #extra>
-          <n-button v-if="emptyState.action === 'create'" type="primary" @click="createFirstTask">
-            <template #icon>
-              <n-icon :component="AddOutline" />
-            </template>
-            新建任务
-          </n-button>
-          <n-button v-else-if="emptyState.action === 'show-all'" @click="showAll">查看全部</n-button>
-          <n-button v-else @click="goSettings">去设置</n-button>
-        </template>
-      </n-empty>
-    </n-card>
+    <template v-else>
+      <!-- 有人员／项目就渲染整个矩阵框架；当前筛选下没有任务时只在顶部挂提示，不替换网格。 -->
+      <div v-if="!matrixTasks.length" class="matrix-hint">
+        <span class="hint-text">{{ emptyState.description }}</span>
+        <n-button
+          v-if="emptyState.action === 'create'"
+          type="primary"
+          size="small"
+          @click="createFirstTask"
+        >
+          <template #icon>
+            <n-icon :component="AddOutline" />
+          </template>
+          新建任务
+        </n-button>
+        <n-button v-else-if="emptyState.action === 'show-all'" size="small" @click="showAll">
+          查看全部
+        </n-button>
+        <n-button v-else size="small" @click="goSettings">去设置</n-button>
+      </div>
 
-    <matrix-grid
-      v-else
-      ref="gridRef"
-      :rows="rows"
-      :cols="cols"
-      :cells="cells"
-      :selected="activeCell"
-      @open-cell="openCell"
-      @create-task="openCreate"
-      @edit-task="openEdit"
-      @reorder="handleReorder"
-    />
+      <matrix-grid
+        ref="gridRef"
+        :rows="rows"
+        :cols="cols"
+        :cells="cells"
+        :selected="activeCell"
+        @open-cell="openCell"
+        @create-task="openCreate"
+        @edit-task="openEdit"
+        @reorder="handleReorder"
+      />
+    </template>
 
-    <cell-drawer
-      v-model:open="cellDrawerOpen"
+    <cell-modal
+      v-model:open="cellModalOpen"
       :person="activePerson"
       :project="activeProject"
       :tasks="activeCellTasks"
@@ -306,11 +335,12 @@ async function handleReorder(kind: 'person' | 'project', ids: number[]): Promise
       @create="createFromCell"
     />
 
-    <task-drawer
-      v-model:open="taskDrawerOpen"
+    <task-modal
+      :open="taskModalOpen"
       :task="editingTask"
       :default-person-id="createDefaults?.personId"
       :default-project-id="createDefaults?.projectId"
+      @update:open="handleTaskModalOpen"
     />
   </div>
 </template>
@@ -351,6 +381,24 @@ async function handleReorder(kind: 'person' | 'project', ids: number[]): Promise
   padding: 40px 0;
   color: var(--text-muted);
   font-size: 13px;
+}
+
+.matrix-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.hint-text {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 @media (max-width: 1100px) {

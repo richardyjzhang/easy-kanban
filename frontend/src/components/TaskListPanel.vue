@@ -16,7 +16,7 @@ const props = withDefaults(
     people: Person[]
     projects: Project[]
     busyIds?: number[]
-    /** 格子抽屉里人员、项目已由标题给出，隐藏这两列。 */
+    /** 人员、项目固定在标题里时隐藏这两列（格子弹窗现已展示）。 */
     showContext?: boolean
   }>(),
   { busyIds: () => [], showContext: true },
@@ -81,7 +81,6 @@ function cycleTitle(task: Task): string {
     :single-line="false"
     size="small"
     class="task-table"
-    :class="{ compact: !showContext }"
   >
     <thead>
       <tr>
@@ -251,30 +250,6 @@ function cycleTitle(task: Task): string {
 
 .overdue {
   color: var(--danger);
-}
-
-/* 格子抽屉里宽度有限，压缩固定列，把空间留给任务标题。 */
-.task-table.compact :deep(th),
-.task-table.compact :deep(td) {
-  padding-left: 8px;
-  padding-right: 8px;
-}
-
-.task-table.compact .col-status {
-  width: 86px;
-}
-
-.task-table.compact .col-date {
-  width: 104px;
-  font-size: 12px;
-}
-
-.task-table.compact .col-actions {
-  width: 124px;
-}
-
-.task-table.compact .task-note {
-  max-width: 220px;
 }
 
 @media (max-width: 900px) {
