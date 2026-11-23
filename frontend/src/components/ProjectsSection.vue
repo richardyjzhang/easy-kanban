@@ -11,7 +11,14 @@ import {
   NTable,
   NTag,
 } from 'naive-ui'
-import { AddOutline, ChevronForwardOutline } from '@vicons/ionicons5'
+import {
+  AddOutline,
+  ArchiveOutline,
+  ArrowUndoOutline,
+  ChevronForwardOutline,
+  CreateOutline,
+  TrashOutline,
+} from '@vicons/ionicons5'
 import { computed, ref } from 'vue'
 
 import ColorDot from './ColorDot.vue'
@@ -167,7 +174,7 @@ async function restore(project: Project): Promise<void> {
           <th style="width: 180px">名称</th>
           <th>描述</th>
           <th style="width: 96px; text-align: center">进行中</th>
-          <th style="width: 190px; text-align: right">操作</th>
+          <th style="width: 240px; text-align: right">操作</th>
         </tr>
       </thead>
       <tbody>
@@ -181,10 +188,25 @@ async function restore(project: Project): Promise<void> {
             </n-tag>
           </td>
           <td>
-            <n-space justify="end" :size="2">
-              <n-button text type="primary" size="small" @click="openEdit(project)">编辑</n-button>
-              <n-button text size="small" @click="askArchive(project)">归档</n-button>
-              <n-button text type="error" size="small" @click="askDelete(project)">删除</n-button>
+            <n-space justify="end" :size="8">
+              <n-button text type="primary" size="small" @click="openEdit(project)">
+                <template #icon>
+                  <n-icon :component="CreateOutline" />
+                </template>
+                编辑
+              </n-button>
+              <n-button text size="small" @click="askArchive(project)">
+                <template #icon>
+                  <n-icon :component="ArchiveOutline" />
+                </template>
+                归档
+              </n-button>
+              <n-button text type="error" size="small" @click="askDelete(project)">
+                <template #icon>
+                  <n-icon :component="TrashOutline" />
+                </template>
+                删除
+              </n-button>
             </n-space>
           </td>
         </tr>
@@ -209,9 +231,19 @@ async function restore(project: Project): Promise<void> {
           <ColorDot :color="project.color" :size="9" />
           <span class="archived-name">{{ project.name }}</span>
           <span class="archived-date">{{ formatDateTime(project.archived_at) }} 归档</span>
-          <n-space :size="2">
-            <n-button text type="primary" size="small" @click="restore(project)">恢复</n-button>
-            <n-button text type="error" size="small" @click="askDelete(project)">删除</n-button>
+          <n-space :size="8">
+            <n-button text type="primary" size="small" @click="restore(project)">
+              <template #icon>
+                <n-icon :component="ArrowUndoOutline" />
+              </template>
+              恢复
+            </n-button>
+            <n-button text type="error" size="small" @click="askDelete(project)">
+              <template #icon>
+                <n-icon :component="TrashOutline" />
+              </template>
+              删除
+            </n-button>
           </n-space>
         </div>
       </div>

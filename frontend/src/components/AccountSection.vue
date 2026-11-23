@@ -1,6 +1,7 @@
 <!-- 设置页账号分区：展示当前账号、修改密码与退出登录。 -->
 <script setup lang="ts">
-import { NButton, NForm, NFormItem, NInput } from 'naive-ui'
+import { NButton, NForm, NFormItem, NIcon, NInput } from 'naive-ui'
+import { LogOutOutline, SaveOutline } from '@vicons/ionicons5'
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -88,7 +89,12 @@ function askLogout(): void {
           <p class="account-label">当前账号</p>
           <p class="account-value">{{ auth.username || '管理者' }}</p>
         </div>
-        <n-button secondary @click="askLogout">退出登录</n-button>
+        <n-button secondary @click="askLogout">
+          <template #icon>
+            <n-icon :component="LogOutOutline" />
+          </template>
+          退出登录
+        </n-button>
       </div>
     </div>
 
@@ -144,7 +150,12 @@ function askLogout(): void {
       </n-form>
 
       <div class="form-actions">
-        <n-button type="primary" :loading="saving" @click="submit">更新密码</n-button>
+        <n-button type="primary" :loading="saving" @click="submit">
+          <template #icon>
+            <n-icon :component="SaveOutline" />
+          </template>
+          更新密码
+        </n-button>
       </div>
     </div>
   </section>

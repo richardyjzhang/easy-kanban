@@ -1,6 +1,7 @@
 <!-- 任务列表：表格展示、状态点击循环、编辑/删除入口。 -->
 <script setup lang="ts">
-import { NButton, NSpace, NTable, NTag } from 'naive-ui'
+import { NButton, NIcon, NSpace, NTable, NTag } from 'naive-ui'
+import { CreateOutline, TrashOutline } from '@vicons/ionicons5'
 import { computed } from 'vue'
 
 import StatusDot from './StatusDot.vue'
@@ -133,11 +134,17 @@ function cycleTitle(task: Task): string {
           </span>
         </td>
         <td class="col-actions">
-          <n-space justify="end" :size="2">
+          <n-space justify="end" :size="8">
             <n-button text type="primary" size="small" @click.stop="emit('edit', task)">
+              <template #icon>
+                <n-icon :component="CreateOutline" />
+              </template>
               编辑
             </n-button>
             <n-button text type="error" size="small" @click.stop="emit('delete', task)">
+              <template #icon>
+                <n-icon :component="TrashOutline" />
+              </template>
               删除
             </n-button>
           </n-space>
@@ -194,7 +201,7 @@ function cycleTitle(task: Task): string {
 }
 
 .col-actions {
-  width: 120px;
+  width: 150px;
   text-align: right;
 }
 

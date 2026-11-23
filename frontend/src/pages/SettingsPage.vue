@@ -1,7 +1,12 @@
 <!-- 设置页：顶部分区 Tab + 内容卡片。 -->
 <script setup lang="ts">
 import { NButton, NCard, NEmpty, NIcon, NSpace, NSpin, NTabPane, NTabs } from 'naive-ui'
-import { RefreshOutline } from '@vicons/ionicons5'
+import {
+  FolderOpenOutline,
+  KeyOutline,
+  PeopleOutline,
+  RefreshOutline,
+} from '@vicons/ionicons5'
 import { onMounted, ref } from 'vue'
 
 import AccountSection from '../components/AccountSection.vue'
@@ -68,13 +73,22 @@ function onTabChange(key: string | number): void {
         :animated="false"
         @update:value="onTabChange"
       >
-        <n-tab-pane name="people" tab="人员">
+        <n-tab-pane name="people">
+          <template #tab>
+            <span class="tab-label"><n-icon :component="PeopleOutline" />人员</span>
+          </template>
           <people-section />
         </n-tab-pane>
-        <n-tab-pane name="projects" tab="项目">
+        <n-tab-pane name="projects">
+          <template #tab>
+            <span class="tab-label"><n-icon :component="FolderOpenOutline" />项目</span>
+          </template>
           <projects-section />
         </n-tab-pane>
-        <n-tab-pane name="account" tab="账号">
+        <n-tab-pane name="account">
+          <template #tab>
+            <span class="tab-label"><n-icon :component="KeyOutline" />账号</span>
+          </template>
           <account-section />
         </n-tab-pane>
       </n-tabs>
@@ -101,6 +115,12 @@ function onTabChange(key: string | number): void {
 
 .settings-panel {
   border-radius: 12px;
+}
+
+.tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .settings-panel :deep(.n-card__content) {

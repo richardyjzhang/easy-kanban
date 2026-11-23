@@ -8,7 +8,14 @@ import {
   NTable,
   NTag,
 } from 'naive-ui'
-import { AddOutline, ChevronForwardOutline } from '@vicons/ionicons5'
+import {
+  AddOutline,
+  ArchiveOutline,
+  ArrowUndoOutline,
+  ChevronForwardOutline,
+  CreateOutline,
+  TrashOutline,
+} from '@vicons/ionicons5'
 import { computed, ref } from 'vue'
 
 import ColorDot from './ColorDot.vue'
@@ -133,7 +140,7 @@ async function restore(person: Person): Promise<void> {
           <th style="width: 64px">颜色</th>
           <th>姓名</th>
           <th style="width: 96px; text-align: center">进行中</th>
-          <th style="width: 190px; text-align: right">操作</th>
+          <th style="width: 240px; text-align: right">操作</th>
         </tr>
       </thead>
       <tbody>
@@ -146,10 +153,25 @@ async function restore(person: Person): Promise<void> {
             </n-tag>
           </td>
           <td>
-            <n-space justify="end" :size="2">
-              <n-button text type="primary" size="small" @click="openEdit(person)">编辑</n-button>
-              <n-button text size="small" @click="askArchive(person)">归档</n-button>
-              <n-button text type="error" size="small" @click="askDelete(person)">删除</n-button>
+            <n-space justify="end" :size="8">
+              <n-button text type="primary" size="small" @click="openEdit(person)">
+                <template #icon>
+                  <n-icon :component="CreateOutline" />
+                </template>
+                编辑
+              </n-button>
+              <n-button text size="small" @click="askArchive(person)">
+                <template #icon>
+                  <n-icon :component="ArchiveOutline" />
+                </template>
+                归档
+              </n-button>
+              <n-button text type="error" size="small" @click="askDelete(person)">
+                <template #icon>
+                  <n-icon :component="TrashOutline" />
+                </template>
+                删除
+              </n-button>
             </n-space>
           </td>
         </tr>
@@ -174,9 +196,19 @@ async function restore(person: Person): Promise<void> {
           <ColorDot :color="person.color" :size="9" />
           <span class="archived-name">{{ person.name }}</span>
           <span class="archived-date">{{ formatDateTime(person.archived_at) }} 归档</span>
-          <n-space :size="2">
-            <n-button text type="primary" size="small" @click="restore(person)">恢复</n-button>
-            <n-button text type="error" size="small" @click="askDelete(person)">删除</n-button>
+          <n-space :size="8">
+            <n-button text type="primary" size="small" @click="restore(person)">
+              <template #icon>
+                <n-icon :component="ArrowUndoOutline" />
+              </template>
+              恢复
+            </n-button>
+            <n-button text type="error" size="small" @click="askDelete(person)">
+              <template #icon>
+                <n-icon :component="TrashOutline" />
+              </template>
+              删除
+            </n-button>
           </n-space>
         </div>
       </div>

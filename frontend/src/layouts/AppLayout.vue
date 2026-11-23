@@ -1,7 +1,7 @@
 <!-- PC 端整体布局：顶部导航、账号信息与页面内容容器。 -->
 <script setup lang="ts">
 import { NButton, NIcon } from 'naive-ui'
-import { LogOutOutline } from '@vicons/ionicons5'
+import { ListOutline, LogOutOutline, SettingsOutline } from '@vicons/ionicons5'
 import { useRoute, useRouter } from 'vue-router'
 
 import BrandMark from '../components/BrandMark.vue'
@@ -32,6 +32,7 @@ function logout(): void {
 
         <nav class="nav" aria-label="主导航">
           <RouterLink to="/pc" class="nav-link" :class="{ active: route.path === '/pc' }">
+            <n-icon :component="ListOutline" />
             任务
           </RouterLink>
           <RouterLink
@@ -39,6 +40,7 @@ function logout(): void {
             class="nav-link"
             :class="{ active: route.path.startsWith('/pc/settings') }"
           >
+            <n-icon :component="SettingsOutline" />
             设置
           </RouterLink>
         </nav>
@@ -104,6 +106,9 @@ function logout(): void {
 }
 
 .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 12px;
   border-radius: 8px;
   color: var(--text-muted);
