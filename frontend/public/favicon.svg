@@ -1,0 +1,8 @@
+<!-- easy-kanban 站点图标：2×2 矩阵图形。 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="8" fill="#3D6FE4"/>
+  <rect x="7" y="7" width="7.5" height="7.5" rx="2" fill="#ffffff"/>
+  <rect x="17.5" y="7" width="7.5" height="7.5" rx="2" fill="#ffffff" opacity="0.55"/>
+  <rect x="7" y="17.5" width="7.5" height="7.5" rx="2" fill="#ffffff" opacity="0.55"/>
+  <rect x="17.5" y="17.5" width="7.5" height="7.5" rx="2" fill="#ffffff" opacity="0.3"/>
+</svg>

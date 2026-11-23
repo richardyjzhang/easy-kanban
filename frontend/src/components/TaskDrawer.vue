@@ -1,0 +1,176 @@
+<!-- 任务右侧抽屉：新建/编辑任务，关闭前检查未保存修改。 -->
+<script setup lang="ts">
+import { NButton, NDrawer, NDrawerContent, NSpace } from 'naive-ui'
+import { computed, ref, watch } from 'vue'
+
+import TaskForm from './TaskForm.vue'
+import { ApiError, messageOfError } from '../api/client'
+import { dialog, message } from '../feedback'
+import { useDataStore } from '../stores/data'
+import type { Person, Project, Task } from '../types'
+
+const props = defineProps<{
+  open: boolean
+  task: Task | null
+  defaultPersonId?: number
+  defaultProjectId?: number
+}>()
+
+const emit = defineEmits<{ 'update:open': [value: boolean] }>()
+
+const data = useDataStore()
+
+const formRef = ref<InstanceType<typeof TaskForm> | null>(null)
+const dirty = ref(false)
+const saving = ref(false)
+const serverErrors = ref<Record<string, string>>({})
+
+const title = computed(() => (props.task ? '编辑任务' : '新建任务'))
+
+// 人员下拉默认只给在册人员；若任务原本指向已归档人员，补进选项以保留当前值。
+const personOptions = computed<Person[]>(() => {
+  const list = [...data.activePeople]
+  const currentId = props.task?.person_id
+  if (currentId && !list.some((person) => person.id === currentId)) {
+    const archived = data.people.find((person) => person.id === currentId)
+    if (archived) list.push(archived)
+  }
+  return list
+})
+
+// 项目下拉同理：归档项目补成「已归档」选项，避免编辑时值显示为空。
+const projectOptions = computed<Project[]>(() => {
+  const list = [...data.activeProjects]
+  const currentId = props.task?.project_id
+  if (currentId && !list.some((project) => project.id === currentId)) {
+    const archived = data.projects.find((project) => project.id === currentId)
+    if (archived) list.push(archived)
+  }
+  return list
+})
+
+watch(
+  () => props.open,
+  (open) => {
+    if (!open) return
+    serverErrors.value = {}
+    dirty.value = false
+  },
+)
+
+/** 关闭抽屉。 */
+function close(): void {
+  emit('update:open', false)
+}
+
+/** 请求关闭；有未保存内容时先确认。 */
+function requestClose(): void {
+  if (saving.value) return
+  if (!dirty.value) {
+    close()
+    return
+  }
+  dialog.warning({
+    title: '放弃修改？',
+    content: '当前填写的内容还没有保存，关闭后会丢失。',
+    positiveText: '放弃修改',
+    negativeText: '继续编辑',
+    onPositiveClick: () => {
+      close()
+    },
+  })
+}
+
+/** 处理抽屉自身的关闭事件（遮罩、ESC、关闭按钮）。 */
+function handleShow(value: boolean): void {
+  if (!value) requestClose()
+}
+
+/** 校验并提交任务，服务端字段错误回填到表单。 */
+async function save(): Promise<void> {
+  if (saving.value) return
+  const input = formRef.value?.validate()
+  if (!input) return
+
+  saving.value = true
+  serverErrors.value = {}
+  try {
+    if (props.task) {
+      await data.updateTask(props.task.id, input)
+      message.success('任务已更新')
+    } else {
+      await data.createTask(input)
+      message.success('任务已创建')
+    }
+    dirty.value = false
+    close()
+  } catch (cause) {
+    if (cause instanceof ApiError && cause.status === 400 && Object.keys(cause.details).length > 0) {
+      serverErrors.value = cause.details
+    }
+    message.error(messageOfError(cause))
+  } finally {
+    saving.value = false
+  }
+}
+</script>
+
+<template>
+  <n-drawer
+    :show="open"
+    :width="480"
+    placement="right"
+    :mask-closable="!saving"
+    @update:show="handleShow"
+  >
+    <n-drawer-content :native-scrollbar="false" closable>
+      <template #header>
+        <div class="drawer-head">
+          <h2>{{ title }}</h2>
+          <p>{{ task ? '修改后立即生效，没有额外的保存副本。' : '先记下来，其余字段之后再补。' }}</p>
+        </div>
+      </template>
+
+      <TaskForm
+        ref="formRef"
+        :key="task?.id ?? 'new'"
+        :task="task"
+        :people="personOptions"
+        :projects="projectOptions"
+        :default-person-id="defaultPersonId ?? data.systemPerson?.id ?? 0"
+        :default-project-id="defaultProjectId ?? 0"
+        :server-errors="serverErrors"
+        :disabled="saving"
+        @dirty="dirty = $event"
+      />
+
+      <template #footer>
+        <n-space justify="end">
+          <n-button :disabled="saving" @click="requestClose">取消</n-button>
+          <n-button
+            type="primary"
+            :loading="saving"
+            :disabled="projectOptions.length === 0"
+            @click="save"
+          >
+            保存
+          </n-button>
+        </n-space>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
+</template>
+
+<style scoped>
+.drawer-head h2 {
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.drawer-head p {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+</style>

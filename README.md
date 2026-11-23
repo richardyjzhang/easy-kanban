@@ -53,7 +53,7 @@ git clone <repo>
 cd easy-kanban
 ```
 
-部署步骤见 [docs/DEPLOY.md](docs/DEPLOY.md)：Nginx 子路径、systemd 托管、首次启动自动初始化。
+部署步骤见 [docs/DEPLOY.md](docs/DEPLOY.md)：Nginx 子路径、systemd 托管、首次部署手动执行 `schema.sql` 初始化数据库。
 
 ## 📚 文档
 
@@ -66,4 +66,4 @@ cd easy-kanban
 
 ## 🧱 技术选型
 
-Vue 3 + TypeScript + Vite · Flask + SQLite · 单用户自部署，子路径挂在 Nginx 后面。
+Vue 3 + TypeScript + Vite + Naive UI · Flask + SQLite · 单用户自部署，子路径挂在 Nginx 后面。

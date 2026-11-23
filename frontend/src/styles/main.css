@@ -1,0 +1,168 @@
+/* ============================================================
+   easy-kanban 全局样式
+   组件视觉交给 Naive UI，这里只保留重置、设计变量与页面级布局。
+   ============================================================ */
+
+:root {
+  /* 主题色（与 src/theme.ts 保持一致） */
+  --primary: #1e3a8a;
+  --primary-hover: #1e40af;
+  --primary-soft: #eef2ff;
+
+  /* 中性色 */
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-muted: #f7f8fc;
+  --surface-sunken: #eef1f8;
+  --border: #e5e7eb;
+  --border-strong: #d6dae3;
+  --text: #1f2937;
+  --text-secondary: #374151;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+
+  /* 语义色（对齐 Naive UI） */
+  --danger: #d03050;
+  --success: #18a058;
+  --warning: #f0a020;
+
+  --font:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --topbar-height: 60px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(30, 58, 138, 0.16);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c8ced8 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #c8ced8;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ------------------------------ 页面级工具类 ------------------------------ */
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page-head h1 {
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.page-sub {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.faint {
+  color: var(--text-faint);
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.section-head h2 {
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.section-sub {
+  max-width: 560px;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.dialog-actions {
+  margin-top: 20px;
+}
+
+.dialog-error {
+  margin-top: 8px;
+  color: var(--danger);
+  font-size: 12px;
+}

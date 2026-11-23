@@ -11,6 +11,7 @@
 | 用户 | 单账号、单用户，无协作概念 |
 | 终端 | PC 与 H5 **两套独立布局、各自路由**，不共用页面骨架 |
 | 共用部分 | 数据层（stores + API client）、基础原子组件、类型定义 |
+| UI 组件库 | Naive UI（深蓝主题），图标使用 `@vicons/ionicons5` |
 | 部署 | 子路径 `/easy-kanban/`，前端使用 hash 路由，地址形如 `/easy-kanban/#/pc` |
 | 观感 | PC 精致、留白充足；H5 紧凑、信息优先、单手可达 |
 
@@ -37,10 +38,12 @@
 src/
 ├─ api/            # client.ts（baseURL = BASE + '/api'，注入 Bearer，统一错误）
 ├─ stores/         # auth / people / projects / tasks / filters / ui
-├─ components/     # ColorDot StatusDot DateRangePicker EmptyState ConfirmDialog Toast
+├─ components/     # 通用组件与业务组件（TaskForm、TaskListPanel、设置页分区等）
+├─ layouts/        # 页面外壳（当前为 PC 的 AppLayout；M4 增加 H5 外壳）
+├─ pages/          # 路由页面（LoginPage、TaskListPage、SettingsPage）
 ├─ types/          # Person Project Task 及请求/响应类型
-├─ pc/             # P2、P3 及 PC 专用组件
-└─ m/              # P4、P5 及 H5 专用组件
+├─ utils/          # 日期格式化、滚动锁等纯函数
+└─ styles/         # 全局样式与设计变量
 ```
 
 **数据加载策略**：进入矩阵时一次性拉取全量人员、项目与任务（规模上限 2000 条），前端按 `(person_id, project_id)` 建索引分组；切换周、转置、拖动均不触发网络请求。所有写操作走乐观更新，失败回滚。
@@ -107,6 +110,8 @@ src/
 
 ## 6. 组件清单
 
+> 按钮、输入框、表格、弹层、提示等通用交互由 Naive UI 提供；下面只列业务组件。
+
 | 组件 | 职责 |
 |---|---|
 | `MatrixGrid` | 网格布局、滚动同步、行列表头吸附 |
@@ -114,13 +119,13 @@ src/
 | `TaskChip` | 状态点 + 标题 + 日期（无日期显示「—」），紧凑模式与完整模式 |
 | `RowHeader` / `ColHeader` | 名称、颜色、拖拽排序、拖动把手 |
 | `PendingRowHeader` | 「待分配」行头：锁标识与未指派数量 |
-| `StatusDot` | 点击循环切换状态，带过渡动画 |
+| `StatusDot` | 状态色点，配合 Naive UI `NTag` 使用 |
 | `FilterBar` | 预设范围 + 自定义范围 |
 | `TransposeButton` | 转置，带旋转动效 |
 | `TaskForm` | 新建／编辑共用表单与校验 |
-| `TaskListPanel` | D1 列表容器，分组与排序 |
-| `SettingTable` | 人员／项目表格（PC） |
-| `EmptyState` | 空矩阵、空归档、空筛选结果三种文案 |
+| `TaskListPanel` | 任务列表容器，分组与排序 |
+| `SettingTable` | 人员／项目表格（PC，基于 `NTable`） |
+| `EmptyState` | 空矩阵、空归档、空筛选结果三种文案（基于 `NEmpty`） |
 
 ## 7. 交互与反馈约定
 
