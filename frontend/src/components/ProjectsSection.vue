@@ -143,15 +143,14 @@ async function restore(project: Project): Promise<void> {
 </script>
 
 <template>
-  <section class="section">
+  <section class="section" aria-label="项目">
     <header class="section-head">
       <div>
-        <h2>项目</h2>
         <p class="section-sub">
           矩阵的列。归档后项目从矩阵收起；删除项目需要输入名称确认，且项目下不能有任务。
         </p>
       </div>
-      <n-button type="primary" size="small" @click="openCreate">
+      <n-button type="primary" @click="openCreate">
         <template #icon>
           <n-icon :component="AddOutline" />
         </template>
@@ -159,11 +158,7 @@ async function restore(project: Project): Promise<void> {
       </n-button>
     </header>
 
-    <n-empty v-if="!active.length" description="还没有项目">
-      <template #extra>
-        <n-button type="primary" @click="openCreate">新建项目</n-button>
-      </template>
-    </n-empty>
+    <n-empty v-if="!active.length" description="还没有项目" />
 
     <n-table v-else :bordered="false" :single-line="false" size="small">
       <thead>

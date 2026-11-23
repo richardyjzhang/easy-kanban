@@ -1,15 +1,8 @@
-<!-- 设置页：左侧分区导航，右侧人员 / 项目 / 账号内容。 -->
+<!-- 设置页：顶部分区 Tab + 内容卡片。 -->
 <script setup lang="ts">
-import { NButton, NCard, NEmpty, NIcon, NMenu, NSpace, NSpin } from 'naive-ui'
-import type { MenuOption } from 'naive-ui'
-import {
-  FolderOpenOutline,
-  KeyOutline,
-  PeopleOutline,
-  RefreshOutline,
-} from '@vicons/ionicons5'
-import { h, onMounted, ref } from 'vue'
-import type { Component } from 'vue'
+import { NButton, NCard, NEmpty, NIcon, NSpace, NSpin, NTabPane, NTabs } from 'naive-ui'
+import { RefreshOutline } from '@vicons/ionicons5'
+import { onMounted, ref } from 'vue'
 
 import AccountSection from '../components/AccountSection.vue'
 import PeopleSection from '../components/PeopleSection.vue'
@@ -20,17 +13,6 @@ type SectionKey = 'people' | 'projects' | 'account'
 
 const data = useDataStore()
 const current = ref<SectionKey>('people')
-
-/** 为菜单项生成图标 VNode。 */
-function renderIcon(icon: Component) {
-  return () => h(NIcon, null, { default: () => h(icon) })
-}
-
-const menuOptions: MenuOption[] = [
-  { label: '人员', key: 'people', icon: renderIcon(PeopleOutline) },
-  { label: '项目', key: 'projects', icon: renderIcon(FolderOpenOutline) },
-  { label: '账号', key: 'account', icon: renderIcon(KeyOutline) },
-]
 
 onMounted(() => {
   // 错误已写入 store，页面会展示重试入口。
@@ -43,7 +25,7 @@ function retry(): void {
 }
 
 /** 切换设置分区。 */
-function onMenuSelect(key: unknown): void {
+function onTabChange(key: string | number): void {
   if (key === 'people' || key === 'projects' || key === 'account') {
     current.value = key
   }
@@ -55,7 +37,6 @@ function onMenuSelect(key: unknown): void {
     <header class="page-head">
       <div>
         <h1>设置</h1>
-        <p class="page-sub">人员、项目与账号</p>
       </div>
     </header>
 
@@ -79,17 +60,25 @@ function onMenuSelect(key: unknown): void {
       </n-empty>
     </n-card>
 
-    <div v-else class="settings-layout">
-      <n-card :bordered="false" size="small" class="settings-nav">
-        <n-menu :value="current" :options="menuOptions" @update:value="onMenuSelect" />
-      </n-card>
-
-      <n-card :bordered="false" class="settings-panel">
-        <people-section v-if="current === 'people'" />
-        <projects-section v-else-if="current === 'projects'" />
-        <account-section v-else />
-      </n-card>
-    </div>
+    <n-card v-else :bordered="false" class="settings-panel">
+      <n-tabs
+        type="line"
+        size="large"
+        :value="current"
+        :animated="false"
+        @update:value="onTabChange"
+      >
+        <n-tab-pane name="people" tab="人员">
+          <people-section />
+        </n-tab-pane>
+        <n-tab-pane name="projects" tab="项目">
+          <projects-section />
+        </n-tab-pane>
+        <n-tab-pane name="account" tab="账号">
+          <account-section />
+        </n-tab-pane>
+      </n-tabs>
+    </n-card>
   </div>
 </template>
 
@@ -110,37 +99,21 @@ function onMenuSelect(key: unknown): void {
   font-size: 13px;
 }
 
-.settings-layout {
-  display: grid;
-  grid-template-columns: 208px minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
-}
-
-.settings-nav {
-  border-radius: 12px;
-}
-
-.settings-nav :deep(.n-card__content) {
-  padding: 8px;
-}
-
 .settings-panel {
-  min-width: 0;
   border-radius: 12px;
 }
 
 .settings-panel :deep(.n-card__content) {
-  padding: 24px 26px 26px;
+  padding: 14px 26px 26px;
+}
+
+.settings-panel :deep(.n-tab-pane) {
+  padding-top: 8px;
 }
 
 @media (max-width: 860px) {
-  .settings-layout {
-    grid-template-columns: 1fr;
-  }
-
   .settings-panel :deep(.n-card__content) {
-    padding: 20px 16px;
+    padding: 10px 16px 20px;
   }
 }
 </style>

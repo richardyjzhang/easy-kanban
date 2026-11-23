@@ -110,15 +110,14 @@ async function restore(person: Person): Promise<void> {
 </script>
 
 <template>
-  <section class="section">
+  <section class="section" aria-label="人员">
     <header class="section-head">
       <div>
-        <h2>人员</h2>
         <p class="section-sub">
           矩阵的行。内置的「待分配」不在这里显示；归档后人员从矩阵收起，历史任务仍保留。
         </p>
       </div>
-      <n-button type="primary" size="small" @click="openCreate">
+      <n-button type="primary" @click="openCreate">
         <template #icon>
           <n-icon :component="AddOutline" />
         </template>
@@ -126,11 +125,7 @@ async function restore(person: Person): Promise<void> {
       </n-button>
     </header>
 
-    <n-empty v-if="!active.length" description="还没有人员">
-      <template #extra>
-        <n-button type="primary" @click="openCreate">新建人员</n-button>
-      </template>
-    </n-empty>
+    <n-empty v-if="!active.length" description="还没有人员" />
 
     <n-table v-else :bordered="false" :single-line="false" size="small">
       <thead>

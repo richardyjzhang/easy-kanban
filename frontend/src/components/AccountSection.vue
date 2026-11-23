@@ -75,10 +75,9 @@ function askLogout(): void {
 </script>
 
 <template>
-  <section class="section">
+  <section class="section" aria-label="账号">
     <header class="section-head">
       <div>
-        <h2>账号</h2>
         <p class="section-sub">系统只有一个账号。用户名在部署时由环境变量决定，之后不可修改。</p>
       </div>
     </header>
