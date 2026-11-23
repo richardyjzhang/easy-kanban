@@ -5,6 +5,7 @@ import { LockClosedOutline, LogInOutline, PersonOutline } from '@vicons/ionicons
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import AuroraBackdrop from '../components/AuroraBackdrop.vue'
 import BrandMark from '../components/BrandMark.vue'
 import { messageOfError } from '../api/client'
 import { useAuthStore } from '../stores/auth'
@@ -61,6 +62,8 @@ async function submit(): Promise<void> {
 
 <template>
   <div class="login">
+    <AuroraBackdrop />
+
     <section class="intro">
       <div class="intro-brand">
         <BrandMark :size="30" />
@@ -143,13 +146,22 @@ async function submit(): Promise<void> {
 
 <style scoped>
 .login {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  min-height: 100%;
-  background:
-    radial-gradient(900px 500px at 12% 0%, rgba(30, 58, 138, 0.12), transparent 60%),
-    radial-gradient(700px 500px at 95% 100%, rgba(29, 78, 216, 0.1), transparent 60%),
-    var(--bg);
+  /* 中间隔着 n-config-provider（高度 auto），百分比高度撑不满，直接用视口单位。 */
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* 背景交给 AuroraBackdrop，这里只留一层兜底底色。 */
+  background: var(--bg);
+}
+
+/* 内容层永远压在背景之上。 */
+.intro,
+.panel {
+  position: relative;
+  z-index: 1;
 }
 
 .intro {
@@ -224,7 +236,13 @@ async function submit(): Promise<void> {
 
 .login-card {
   width: min(400px, 100%);
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.1);
+  /* 半透明 + 磨砂：让底下的柔光透一点上来，卡片才像浮在背景上。 */
+  background: rgba(255, 255, 255, 0.74);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow:
+    0 18px 48px rgba(15, 23, 42, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.8);
 }
 
 .login-title {
