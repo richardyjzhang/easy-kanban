@@ -68,7 +68,10 @@ const hiddenCount = computed(() => Math.max(0, props.tasks.length - props.max))
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.18s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.15s ease;
 }
 
 .matrix-cell:hover {
