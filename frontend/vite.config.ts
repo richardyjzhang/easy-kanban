@@ -12,6 +12,8 @@ export default defineConfig({
   base: '/',
   plugins: [vue()],
   server: {
+    // 局域网 / 手机调试要能被外部访问；Vite 默认只绑 localhost。
+    host: '0.0.0.0',
     port: 5173,
     proxy: {
       '/api': {
